@@ -756,7 +756,7 @@ body {
     .nav-links {
         width: 100% !important;
         max-width: 100% !important; /* Se ensancha o se adapta según prefieras */
-        margin: 0 auto !important;
+        margin: 0px auto !important;
         display: flex !important;
         flex-direction: row !important; 
         justify-content: space-evenly !important; 
@@ -765,7 +765,7 @@ body {
         /* Mantenemos un tono oscuro semi-traslúcido premium sobre el fondo negro */
         background-color: rgba(0, 0, 0, 0.349) !important; 
         
-        padding: 10px 0 !important; /* Altura ideal y delgada para los botones */
+        padding: 8px 0px !important; /* Altura ideal y delgada para los botones */
         border-radius: 0 !important; /* Al estar fuera, queda mejor recta de lado a lado */
         border-top: 1px solid rgba(255, 255, 255, 0.05) !important;
         box-shadow: none !important;
@@ -779,7 +779,7 @@ body {
         text-shadow: none !important;
         text-transform: uppercase;
         letter-spacing: 0.5px;
-        padding: 4px 8px !important;
+        padding: 4px 0px !important;
         transition: var(--transition-smooth) !important;
     }
 

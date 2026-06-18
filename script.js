@@ -52,7 +52,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
             if (gustosElegidos.length === 0) {
                 const nombreMinuscula = producto.toLowerCase();
-                let saborDetectado = "Tradicional";
+                let saborDetectado = "Normal";
                 
                 if (nombreMinuscula.includes('pollo')) saborDetectado = 'Pollo';
                 else if (nombreMinuscula.includes('carne')) saborDetectado = 'Carne';
@@ -206,7 +206,7 @@ if (formularioPedido) {
         const direccion = document.getElementById('direccion').value;
         
         const tipoEntrega = document.querySelector('input[name="tipo_entrega"]:checked').value;
-        const textoEntrega = tipoEntrega === 'envio' ? '🛵 Envío a Domicilio' : '🏃‍♂️ Retiro por el Local';
+        const textoEntrega = tipoEntrega === 'envio' ? 'Envío a Domicilio' : 'Retiro por el Local';
 
         const totalGeneral = totalProductos + costoEnvio;
 
@@ -219,7 +219,7 @@ if (formularioPedido) {
         };
 
         try {
-            // 👇 CAMBIAMOS ESTA LÍNEA CON TU URL REAL DE RENDER 👇
+            // CAMBIAMOS ESTA LÍNEA CON TU URL REAL DE RENDER 
             const respuesta = await fetch('https://web-sabor-sazon.onrender.com/api/pedidos', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
@@ -254,7 +254,7 @@ if (formularioPedido) {
                     });
 
                     if (costoEnvio > 0) {
-                        mensajeWA += `• 🛵 *Costo de Envío:* $${costoEnvio.toLocaleString('es-AR')}\n`;
+                        mensajeWA += `• *Costo de Envío:* $${costoEnvio.toLocaleString('es-AR')}\n`;
                     }
                     
                     mensajeWA += `\n*Total General a Pagar:* $${totalGeneral.toLocaleString('es-AR')}\n\n`;
