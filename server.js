@@ -5,44 +5,38 @@ const cors = require('cors');
 const app = express();
 const PORT = process.env.PORT || 5000;
 
-// Middleware
+// Middleware - CORS totalmente abierto para que Vercel conecte sin trabas
 app.use(cors({
-    origin: 'https://web-sabor-sazon.vercel.app', // Tu URL de Vercel
-    credentials: true
+    origin: '*',
+    methods: ['GET', 'POST'],
+    allowedHeaders: ['Content-Type']
 }));
-app.use(express.json()); // Para poder leer formato JSON en las peticiones
+app.use(express.json()); // Habilita la lectura de JSON
 
-// Conexión a la Base de Datos limpia (Para versiones modernas de Mongoose)
+// Conexión a tu Base de Datos limpia en MongoDB Atlas
 mongoose.connect('mongodb+srv://yuriangelperezedu_db_user:vVs9x7ZbJ2znTaaQ@cluster0.qfrevux.mongodb.net/saborysazon?appName=Cluster0')
 .then(() => console.log('Conectado exitosamente a MongoDB Atlas'))
 .catch(err => console.error('Error al conectar a la base de datos:', err));
 
-// --- ESQUEMA ACTUALIZADO Y ADAPTADO PARA LOS NUEVOS DATOS ---
+// --- ESQUEMA ACTUALIZADO (Soporta tipoEntrega, costoEnvio y gustos) ---
 const PedidoSchema = new mongoose.Schema({
     cliente: {
         nombre: String,
         telefono: String,
-        direccion: { type: String, default: "" } // Opcional si eligen retirar en el local
+        direccion: { type: String, default: "" } // Opcional si retiran en el local
     },
     items: [{
         producto: String,
         cantidad: Number,
         precio: Number,
-        // Agregamos el soporte para el array de objetos con gustos desagregados
+        // Array para guardar los gustos elegidos en los combos
         gustos: [{
             componente: String, // Ej: "Arepa 1"
             sabor: String       // Ej: "Carne"
         }]
     }],
-    tipoEntrega: { 
-        type: String, 
-        enum: ['retiro', 'envio'], 
-        default: 'retiro' 
-    },
-    costoEnvio: { 
-        type: Number, 
-        default: 0 
-    },
+    tipoEntrega: { type: String, default: 'retiro' },
+    costoEnvio: { type: Number, default: 0 },
     total: Number,
     estado: { type: String, default: 'Pendiente' },
     fecha: { type: Date, default: Date.now }
@@ -50,12 +44,15 @@ const PedidoSchema = new mongoose.Schema({
 
 const Pedido = mongoose.model('Pedido', PedidoSchema);
 
-// RUTAS (API ENDPOINTS)
+// --- SOLUCIÓN AL "CANNOT GET /" ---
+// Esto le da una respuesta amigable a la raíz del servidor
+app.get('/', (req, res) => {
+    res.status(200).json({ success: true, message: "¡Servidor de Sabor & Sazón en línea y funcionando!" });
+});
 
 // 1. Recibir y guardar un nuevo pedido desde el Frontend
 app.post('/api/pedidos', async (req, res) => {
     try {
-        // Al expandir el PedidoSchema, req.body ahora guardará los gustos, tipoEntrega y costoEnvio automáticamente.
         const nuevoPedido = new Pedido(req.body);
         await nuevoPedido.save();
         res.status(201).json({ success: true, message: 'Pedido registrado con éxito', pedidoId: nuevoPedido._id });
@@ -64,7 +61,7 @@ app.post('/api/pedidos', async (req, res) => {
     }
 });
 
-// 2. Obtener la lista de todos los pedidos (para tu panel de administración)
+// 2. Obtener la lista de todos los pedidos (para tu panel)
 app.get('/api/pedidos', async (req, res) => {
     try {
         const listaPedidos = await Pedido.find().sort({ fecha: -1 });
