@@ -1,11 +1,8 @@
 document.addEventListener('DOMContentLoaded', () => {
-    // --- NUEVO: DESPERTADOR AUTOMÁTICO PARA RENDER ---
-    // Apenas carga la página en Vercel, le mandamos un saludo al backend en Render.
-    // Si estaba dormido, esto hace que empiece a arrancar mientras el cliente elige su comida.
-    fetch('https://sabor-y-sazon-backend.onrender.com/api/pedidos')
+    // Apuntamos á túa URL real
+    fetch('https://web-sabor-sazon.onrender.com/api/pedidos')
         .then(() => console.log('Backend despertado exitosamente.'))
         .catch(err => console.log('El backend está arrancando...'));
-    // -------------------------------------------------
 
     // Estado del carrito en memoria
     let carrito = [];
@@ -195,42 +192,42 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     // 3. Procesar el envío del Formulario y Pasarela WhatsApp
-    if (formularioPedido) {
-        formularioPedido.addEventListener('submit', async (e) => {
-            e.preventDefault();
+if (formularioPedido) {
+    formularioPedido.addEventListener('submit', async (e) => {
+        e.preventDefault();
 
-            if (carrito.length === 0) {
-                alert('Por favor, agrega al menos un producto al carrito antes de finalizar.');
-                return;
-            }
+        if (carrito.length === 0) {
+            alert('Por favor, agrega al menos un producto al carrito antes de finalizar.');
+            return;
+        }
 
-            const nombre = document.getElementById('nombre').value;
-            const telefonoInput = document.getElementById('telefono').value;
-            const direccion = document.getElementById('direccion').value;
-            
-            // Capturamos cuál opción seleccionó (retiro o envio)
-            const tipoEntrega = document.querySelector('input[name="tipo_entrega"]:checked').value;
-            const textoEntrega = tipoEntrega === 'envio' ? '🛵 Envío a Domicilio' : '🏃‍♂️ Retiro por el Local';
+        const nombre = document.getElementById('nombre').value;
+        const telefonoInput = document.getElementById('telefono').value;
+        const direccion = document.getElementById('direccion').value;
+        
+        const tipoEntrega = document.querySelector('input[name="tipo_entrega"]:checked').value;
+        const textoEntrega = tipoEntrega === 'envio' ? '🛵 Envío a Domicilio' : '🏃‍♂️ Retiro por el Local';
 
-            const totalGeneral = totalProductos + costoEnvio;
+        const totalGeneral = totalProductos + costoEnvio;
 
-            // Conserva la estructura exacta para tu Backend en Render e incluye los nuevos datos
-            const datosPedido = {
-                cliente: { nombre, telefono: telefonoInput, direccion },
-                items: carrito,
-                tipoEntrega: tipoEntrega,
-                costoEnvio: costoEnvio,
-                total: totalGeneral
-            };
+        const datosPedido = {
+            cliente: { nombre, telefono: telefonoInput, direccion },
+            items: carrito,
+            tipoEntrega: tipoEntrega,
+            costoEnvio: costoEnvio,
+            total: totalGeneral
+        };
 
-            try {
-                const respuesta = await fetch('https://sabor-y-sazon-backend.onrender.com/api/pedidos', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify(datosPedido)
-                });
+        try {
+            // 👇 CAMBIAMOS ESTA LÍNEA CON TU URL REAL DE RENDER 👇
+            const respuesta = await fetch('https://web-sabor-sazon.onrender.com/api/pedidos', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(datosPedido)
+            });
 
-                const resultado = await respuesta.json();
+            const resultado = await respuesta.json();
+            // ... (el resto del código sigue exactamente igual)
 
                 if (resultado.success) {
                     let mensajeWA = `*NUEVO PEDIDO - SABOR & SAZÓN*\n`;
