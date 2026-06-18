@@ -267,14 +267,14 @@ body {
 }
 
 .btn-secondary {
-    background-color: transparent;
+    background-color: #22c55e;
     color: #ffffff;
     border: 1px solid rgba(255, 255, 255, 0.2);
 }
 
 .btn-secondary:hover {
-    background-color: rgba(255, 255, 255, 0.05);
-    border-color: #ffffff;
+    transform: translateY(-2px);
+    box-shadow: 0 4px 15px rgba(113, 255, 57, 0.4);
 }
 
 /* ==========================================================================
@@ -689,7 +689,7 @@ body {
 .promo-badge {
     display: inline-block;
     padding: 4px 10px;
-    background-color: #d3231d;
+    background-color: #c52822;
     color: #ffffff;
     font-size: 11px;
     font-weight: 700;
