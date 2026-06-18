@@ -77,8 +77,8 @@ document.addEventListener('DOMContentLoaded', () => {
             };
 
             try {
-                // Guardar en la Base de Datos local (Puerto 5000)
-                const respuesta = await fetch('http://127.0.0.1:5000/api/pedidos', {
+                // Nueva URL en producción conectada a internet:
+                const respuesta = await fetch('https://sabor-y-sazon-backend.onrender.com/api/pedidos', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify(datosPedido)
