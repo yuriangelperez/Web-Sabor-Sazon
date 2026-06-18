@@ -23,18 +23,9 @@ const PedidoSchema = new mongoose.Schema({
     cliente: {
         nombre: String,
         telefono: String,
-        direccion: { type: String, default: "" } // Opcional si retiran en el local
+        direccion: { type: String, default: "" }
     },
-    items: [{
-        producto: String,
-        cantidad: Number,
-        precio: Number,
-        // Array para guardar los gustos elegidos en los combos
-        gustos: [{
-            componente: String, // Ej: "Arepa 1"
-            sabor: String       // Ej: "Carne"
-        }]
-    }],
+    items: { type: Array, default: [] }, // Al definirlo como Array genérico, guarda gustos y subtotales sin chocar
     tipoEntrega: { type: String, default: 'retiro' },
     costoEnvio: { type: Number, default: 0 },
     total: Number,
@@ -53,10 +44,12 @@ app.get('/', (req, res) => {
 // 1. Recibir y guardar un nuevo pedido desde el Frontend
 app.post('/api/pedidos', async (req, res) => {
     try {
+        console.log("Datos recibidos en el backend:", req.body); // Ver los datos en los logs de Render
         const nuevoPedido = new Pedido(req.body);
         await nuevoPedido.save();
         res.status(201).json({ success: true, message: 'Pedido registrado con éxito', pedidoId: nuevoPedido._id });
     } catch (error) {
+        console.error("Error crítico de Mongoose al guardar:", error); // Esto saldrá en letras rojas en Render
         res.status(500).json({ success: false, message: 'Error al procesar el pedido', error: error.message });
     }
 });
