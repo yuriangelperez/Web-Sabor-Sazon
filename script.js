@@ -1,5 +1,5 @@
 document.addEventListener('DOMContentLoaded', () => {
-    // Apuntamos á túa URL real
+    // Despertar el backend en Render al iniciar la página
     fetch('https://web-sabor-sazon.onrender.com/api/pedidos')
         .then(() => console.log('Backend despertado exitosamente.'))
         .catch(err => console.log('El backend está arrancando...'));
@@ -25,7 +25,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
             if (cardBody) {
                 const selectores = cardBody.querySelectorAll('.custom-select');
-                
+
                 selectores.forEach((select, index) => {
                     let etiquetaItem = "";
                     const labelPrevio = select.previousElementSibling;
@@ -53,7 +53,7 @@ document.addEventListener('DOMContentLoaded', () => {
             if (gustosElegidos.length === 0) {
                 const nombreMinuscula = producto.toLowerCase();
                 let saborDetectado = "Normal";
-                
+
                 if (nombreMinuscula.includes('pollo')) saborDetectado = 'Pollo';
                 else if (nombreMinuscula.includes('carne')) saborDetectado = 'Carne';
                 else if (nombreMinuscula.includes('queso')) saborDetectado = 'Queso';
@@ -66,19 +66,19 @@ document.addEventListener('DOMContentLoaded', () => {
             }
             // --------------------------------------
 
-            const itemExistente = carrito.find(item => 
-                item.producto === producto && 
+            const itemExistente = carrito.find(item =>
+                item.producto === producto &&
                 JSON.stringify(item.gustos) === JSON.stringify(gustosElegidos)
             );
 
             if (itemExistente) {
                 itemExistente.cantidad += 1;
             } else {
-                carrito.push({ 
-                    producto, 
-                    cantidad: 1, 
-                    precio, 
-                    gustos: gustosElegidos 
+                carrito.push({
+                    producto,
+                    cantidad: 1,
+                    precio,
+                    gustos: gustosElegidos
                 });
             }
 
@@ -90,7 +90,7 @@ document.addEventListener('DOMContentLoaded', () => {
     document.addEventListener('change', (e) => {
         if (e.target && e.target.name === 'tipo_entrega') {
             const inputDireccion = document.getElementById('direccion');
-            
+
             if (e.target.value === 'envio') {
                 costoEnvio = 8000;
                 if (inputDireccion) {
@@ -103,87 +103,146 @@ document.addEventListener('DOMContentLoaded', () => {
                 if (inputDireccion) {
                     inputDireccion.required = false;
                     inputDireccion.placeholder = "No es requerida para retirar";
-                    inputDireccion.value = ""; // Limpiamos si escribió algo
+                    inputDireccion.value = "";
                 }
             }
-            // Refrescamos el total visual inmediatamente
             const totalGeneral = totalProductos + costoEnvio;
             carritoTotalSpan.innerText = `$${totalGeneral.toLocaleString('es-AR')}`;
         }
     });
 
-    // 2. Función para redibujar el resumen del pedido ("Tu Pedido")
+    // 2. Función para redibujar el resumen del pedido ("Tu Pedido" y "Sidebar")
     function actualizarInterfazCarrito() {
+        // Capturamos los nuevos elementos del Sidebar
+        const sidebarItemsDiv = document.getElementById('cart-sidebar-items');
+        const sidebarTotalSpan = document.getElementById('cart-sidebar-total');
+        const floatingCountSpan = document.getElementById('cart-floating-count');
+
+        // Calcular cantidad total de unidades en el carrito para el badge flotante
+        let totalUnidades = 0;
+        carrito.forEach(item => totalUnidades += item.cantidad);
+        if (floatingCountSpan) {
+            floatingCountSpan.innerText = totalUnidades;
+        }
+
         if (carrito.length === 0) {
-            carritoItemsDiv.innerHTML = '<p>El carrito está vacío. ¡Agrega tus arepas o combos favoritos!</p>';
-            carritoTotalSpan.innerText = '$0';
+            const mensajeVacio = '<p class="cart-empty-msg">El carrito está vacío. ¡Agrega tus arepas o combos favoritos!</p>';
+            if (carritoItemsDiv) carritoItemsDiv.innerHTML = mensajeVacio;
+            if (sidebarItemsDiv) sidebarItemsDiv.innerHTML = mensajeVacio;
+
+            if (carritoTotalSpan) carritoTotalSpan.innerText = '$0';
+            if (sidebarTotalSpan) sidebarTotalSpan.innerText = '$0';
+
             totalProductos = 0;
             return;
         }
 
-        carritoItemsDiv.innerHTML = '';
+        // Limpiamos los contenedores antes de redibujar
+        if (carritoItemsDiv) carritoItemsDiv.innerHTML = '';
+        if (sidebarItemsDiv) sidebarItemsDiv.innerHTML = '';
         totalProductos = 0;
 
         carrito.forEach((item, index) => {
             const subtotal = item.precio * item.cantidad;
             totalProductos += subtotal;
 
-            const itemDiv = document.createElement('div');
-            itemDiv.style.marginBottom = '14px';
+            // --- 1. Crear nodo para el Checkout Tradicional ---
+            const itemDivCheckout = document.createElement('div');
+            itemDivCheckout.style.marginBottom = '14px';
 
-            const filaPrincipal = document.createElement('div');
-            filaPrincipal.style.display = 'flex';
-            filaPrincipal.style.justify = 'space-between';
-            filaPrincipal.style.alignItems = 'center';
-            filaPrincipal.innerHTML = `
+            const filaPrincipalCheckout = document.createElement('div');
+            filaPrincipalCheckout.style.display = 'flex';
+            filaPrincipalCheckout.style.justifyContent = 'space-between';
+            filaPrincipalCheckout.style.alignItems = 'center';
+            filaPrincipalCheckout.innerHTML = `
                 <span style="color: #ffffff; font-weight: 500;">${item.cantidad}x ${item.producto}</span>
                 <div style="display: flex; align-items: center; gap: 10px;">
                     <span style="color: #ffffff; font-weight: 600;">$${subtotal.toLocaleString('es-AR')}</span>
                     <button class="btn-eliminar" data-index="${index}" style="background: none; border: none; color: #ef4444; cursor: pointer; font-size: 13px; padding: 0 4px;">✕</button>
                 </div>
             `;
-            itemDiv.appendChild(filaPrincipal);
+            itemDivCheckout.appendChild(filaPrincipalCheckout);
 
+            // --- 2. Crear nodo clonado para el Sidebar Flotante ---
+            const itemDivSidebar = document.createElement('div');
+            itemDivSidebar.style.marginBottom = '14px';
+            itemDivSidebar.style.borderBottom = '1px solid rgba(255,255,255,0.03)';
+            itemDivSidebar.style.paddingBottom = '10px';
+
+            const filaPrincipalSidebar = document.createElement('div');
+            filaPrincipalSidebar.style.display = 'flex';
+            filaPrincipalSidebar.style.justifyContent = 'space-between';
+            filaPrincipalSidebar.style.alignItems = 'center';
+            filaPrincipalSidebar.innerHTML = `
+                <span style="color: #ffffff; font-weight: 500; font-size: 14px;">${item.cantidad}x ${item.producto}</span>
+                <div style="display: flex; align-items: center; gap: 10px;">
+                    <span style="color: var(--accent-gold); font-weight: 600; font-size: 14px;">$${subtotal.toLocaleString('es-AR')}</span>
+                    <button class="btn-eliminar-sidebar" data-index="${index}" style="background: none; border: none; color: #ef4444; cursor: pointer; font-size: 13px; padding: 0 4px;">✕</button>
+                </div>
+            `;
+            itemDivSidebar.appendChild(filaPrincipalSidebar);
+
+            // Lógica de gustos desglosados (se aplica a ambas vistas)
             if (item.gustos && item.gustos.length > 0) {
-                const contenedorGustos = document.createElement('div');
-                contenedorGustos.style.fontSize = '12px';
-                contenedorGustos.style.color = '#a1a1aa';
-                contenedorGustos.style.marginTop = '4px';
-                contenedorGustos.style.paddingLeft = '20px';
-                contenedorGustos.style.lineHeight = '1.4';
+                const generarHTMLGustos = () => {
+                    const contenedor = document.createElement('div');
+                    contenedor.style.fontSize = '12px';
+                    contenedor.style.color = '#a1a1aa';
+                    contenedor.style.marginTop = '4px';
+                    contenedor.style.paddingLeft = '15px';
+                    contenedor.style.lineHeight = '1.4';
+                    const lineasGustos = item.gustos.map(g => `<span style="color: #e4e4e7;">${g.componente}:</span> ${g.sabor}`);
+                    contenedor.innerHTML = lineasGustos.join('<br>');
+                    return contenedor;
+                };
 
-                const lineasGustos = item.gustos.map(g => `<span style="color: #e4e4e7;">${g.componente}:</span> ${g.sabor}`);
-                contenedorGustos.innerHTML = lineasGustos.join('<br>');
-                
-                itemDiv.appendChild(contenedorGustos);
+                itemDivCheckout.appendChild(generarHTMLGustos());
+                itemDivSidebar.appendChild(generarHTMLGustos());
             }
 
-            carritoItemsDiv.appendChild(itemDiv);
+            if (carritoItemsDiv) carritoItemsDiv.appendChild(itemDivCheckout);
+            if (sidebarItemsDiv) sidebarItemsDiv.appendChild(itemDivSidebar);
         });
 
-        // Si hay un costo de envío activo, lo añadimos visualmente como un ítem extra abajo del todo
+        // Si hay costo de envío activo, añadirlo a ambas vistas
         if (costoEnvio > 0) {
-            const divEnvio = document.createElement('div');
-            divEnvio.style.display = 'flex';
-            divEnvio.style.justify = 'space-between';
-            divEnvio.style.fontSize = '13px';
-            divEnvio.style.color = '#a1a1aa';
-            divEnvio.style.marginTop = '8px';
-            divEnvio.style.borderTop = '1px dashed #3f3f46';
-            divEnvio.style.paddingTop = '8px';
-            divEnvio.innerHTML = `
-                <span>🛵 Costo de Envío</span>
-                <span>$${costoEnvio.toLocaleString('es-AR')}</span>
-            `;
-            carritoItemsDiv.appendChild(divEnvio);
+            const generarHTMLEnvio = () => {
+                const divEnvio = document.createElement('div');
+                divEnvio.style.display = 'flex';
+                divEnvio.style.justifyContent = 'space-between';
+                divEnvio.style.fontSize = '13px';
+                divEnvio.style.color = '#a1a1aa';
+                divEnvio.style.marginTop = '8px';
+                divEnvio.style.borderTop = '1px dashed #3f3f46';
+                divEnvio.style.paddingTop = '8px';
+                divEnvio.innerHTML = `
+                    <span>🛵 Costo de Envío</span>
+                    <span>$${costoEnvio.toLocaleString('es-AR')}</span>
+                `;
+                return divEnvio;
+            };
+            if (carritoItemsDiv) carritoItemsDiv.appendChild(generarHTMLEnvio());
+            if (sidebarItemsDiv) sidebarItemsDiv.appendChild(generarHTMLEnvio());
         }
 
         const totalGeneral = totalProductos + costoEnvio;
-        carritoTotalSpan.innerText = `$${totalGeneral.toLocaleString('es-AR')}`;
+        if (carritoTotalSpan) carritoTotalSpan.innerText = `$${totalGeneral.toLocaleString('es-AR')}`;
+        if (sidebarTotalSpan) sidebarTotalSpan.innerText = `$${totalGeneral.toLocaleString('es-AR')}`;
 
+        // Asignar escuchadores de eliminación en el Checkout tradicional
         const botonesEliminar = carritoItemsDiv.querySelectorAll('.btn-eliminar');
         botonesEliminar.forEach(btn => {
-            btn.addEventListener('click', (e) => {
+            btn.addEventListener('click', () => {
+                const idx = parseInt(btn.getAttribute('data-index'));
+                carrito.splice(idx, 1);
+                actualizarInterfazCarrito();
+            });
+        });
+
+        // Asignar escuchadores de eliminación en el Sidebar flotante
+        const botonesEliminarSidebar = sidebarItemsDiv.querySelectorAll('.btn-eliminar-sidebar');
+        botonesEliminarSidebar.forEach(btn => {
+            btn.addEventListener('click', () => {
                 const idx = parseInt(btn.getAttribute('data-index'));
                 carrito.splice(idx, 1);
                 actualizarInterfazCarrito();
@@ -192,42 +251,40 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     // 3. Procesar el envío del Formulario y Pasarela WhatsApp
-if (formularioPedido) {
-    formularioPedido.addEventListener('submit', async (e) => {
-        e.preventDefault();
+    if (formularioPedido) {
+        formularioPedido.addEventListener('submit', async (e) => {
+            e.preventDefault();
 
-        if (carrito.length === 0) {
-            alert('Por favor, agrega al menos un producto al carrito antes de finalizar.');
-            return;
-        }
+            if (carrito.length === 0) {
+                alert('Por favor, agrega al menos un producto al carrito antes de finalizar.');
+                return;
+            }
 
-        const nombre = document.getElementById('nombre').value;
-        const telefonoInput = document.getElementById('telefono').value;
-        const direccion = document.getElementById('direccion').value;
-        
-        const tipoEntrega = document.querySelector('input[name="tipo_entrega"]:checked').value;
-        const textoEntrega = tipoEntrega === 'envio' ? 'Envío a Domicilio' : 'Retiro por el Local';
+            const nombre = document.getElementById('nombre').value;
+            const telefonoInput = document.getElementById('telefono').value;
+            const direccion = document.getElementById('direccion').value;
 
-        const totalGeneral = totalProductos + costoEnvio;
+            const tipoEntrega = document.querySelector('input[name="tipo_entrega"]:checked').value;
+            const textoEntrega = tipoEntrega === 'envio' ? 'Envío a Domicilio' : 'Retiro por el Local';
 
-        const datosPedido = {
-            cliente: { nombre, telefono: telefonoInput, direccion },
-            items: carrito,
-            tipoEntrega: tipoEntrega,
-            costoEnvio: costoEnvio,
-            total: totalGeneral
-        };
+            const totalGeneral = totalProductos + costoEnvio;
 
-        try {
-            // CAMBIAMOS ESTA LÍNEA CON TU URL REAL DE RENDER 
-            const respuesta = await fetch('https://web-sabor-sazon.onrender.com/api/pedidos', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify(datosPedido)
-            });
+            const datosPedido = {
+                cliente: { nombre, telefono: telefonoInput, direccion },
+                items: carrito,
+                tipoEntrega: tipoEntrega,
+                costoEnvio: costoEnvio,
+                total: totalGeneral
+            };
 
-            const resultado = await respuesta.json();
-            // ... (el resto del código sigue exactamente igual)
+            try {
+                const respuesta = await fetch('https://web-sabor-sazon.onrender.com/api/pedidos', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(datosPedido)
+                });
+
+                const resultado = await respuesta.json();
 
                 if (resultado.success) {
                     let mensajeWA = `*NUEVO PEDIDO - SABOR & SAZÓN*\n`;
@@ -235,15 +292,14 @@ if (formularioPedido) {
                     mensajeWA += `*Cliente:* ${nombre}\n`;
                     mensajeWA += `*Teléfono:* ${telefonoInput}\n`;
                     mensajeWA += `*Método:* ${textoEntrega}\n`;
-                    
+
                     if (tipoEntrega === 'envio') {
                         mensajeWA += `*Dirección:* ${direccion}\n\n`;
                     } else {
                         mensajeWA += `\n`;
                     }
-                    
+
                     mensajeWA += `*Detalle de la compra:*\n`;
-                    
                     carrito.forEach(item => {
                         mensajeWA += `• ${item.cantidad}x *${item.producto}* ($${(item.precio * item.cantidad).toLocaleString('es-AR')})\n`;
                         if (item.gustos && item.gustos.length > 0) {
@@ -256,27 +312,25 @@ if (formularioPedido) {
                     if (costoEnvio > 0) {
                         mensajeWA += `• *Costo de Envío:* $${costoEnvio.toLocaleString('es-AR')}\n`;
                     }
-                    
+
                     mensajeWA += `\n*Total General a Pagar:* $${totalGeneral.toLocaleString('es-AR')}\n\n`;
                     mensajeWA += `¿Me pasas los datos para el pago? ¡Muchas gracias!`;
 
                     const mensajeCodificado = encodeURIComponent(mensajeWA);
-                    const numeroNegocio = "541125523930"; 
+                    const numeroNegocio = "541125523930";
                     const urlWhatsApp = `https://wa.me/${numeroNegocio}?text=${mensajeCodificado}`;
 
                     alert('¡Pedido guardado en el sistema! Redirigiendo a WhatsApp para procesar el pago...');
                     window.open(urlWhatsApp, '_blank');
 
-                    // Resetear todo
                     carrito = [];
                     costoEnvio = 0;
                     actualizarInterfazCarrito();
                     formularioPedido.reset();
-                    
-                    // Volver a dejar la dirección por defecto opcional
+
                     const inputDireccion = document.getElementById('direccion');
                     if (inputDireccion) inputDireccion.required = false;
-                    
+
                 } else {
                     alert('Hubo un error en el servidor al procesar la orden.');
                 }
@@ -287,4 +341,52 @@ if (formularioPedido) {
             }
         });
     }
+
+    /* ==========================================================================
+       LÓGICA DEL MENÚ HAMBURGUESA (UNIFICADA COMPLETA)
+       ========================================================================== */
+    const menuToggle = document.getElementById("mobile-menu-btn");
+    const navLinks = document.getElementById("nav-menu-links");
+
+    if (menuToggle && navLinks) {
+        menuToggle.addEventListener("click", () => {
+            navLinks.classList.toggle("active");
+        });
+
+        const links = navLinks.querySelectorAll("a");
+        links.forEach(link => {
+            link.addEventListener("click", () => {
+                navLinks.classList.remove("active");
+            });
+        });
+    }
+    /* ==========================================================================
+           LÓGICA DE APERTURA Y CIERRE DEL PANEL LATERAL (SIDEBAR)
+           ========================================================================== */
+    const floatingBtn = document.getElementById('cart-floating-btn');
+    const sidebarCart = document.getElementById('cart-sidebar');
+    const closeSidebarBtn = document.getElementById('cart-sidebar-close');
+    const cartOverlay = document.getElementById('cart-overlay');
+    const checkoutLink = document.getElementById('btn-sidebar-checkout');
+
+    function abrirSidebar() {
+        if (sidebarCart && cartOverlay) {
+            sidebarCart.classList.add('open');
+            cartOverlay.classList.add('open');
+        }
+    }
+
+    function cerrarSidebar() {
+        if (sidebarCart && cartOverlay) {
+            sidebarCart.classList.remove('open');
+            cartOverlay.classList.remove('open');
+        }
+    }
+
+    if (floatingBtn) floatingBtn.addEventListener('click', abrirSidebar);
+    if (closeSidebarBtn) closeSidebarBtn.addEventListener('click', cerrarSidebar);
+    if (cartOverlay) cartOverlay.addEventListener('click', cerrarSidebar);
+
+    // Al hacer clic en "Completar Datos", cerramos el panel para que el cliente pueda ver el formulario libremente
+    if (checkoutLink) checkoutLink.addEventListener('click', cerrarSidebar);
 });
