@@ -656,6 +656,30 @@
                             </label>
                         </div>
                     </div>
+
+                    <div class="form-group" id="bloque-pago" style="margin-bottom: 20px;">
+                        <label
+                            style="color: #ffffff; font-weight: 500; display: block; margin-bottom: 10px; font-size: 15px;">
+                            Método de Pago:
+                        </label>
+                        <div class="contenedor-entrega">
+                            <label class="tarjeta-opcion">
+                                <input type="radio" name="metodo_pago" value="mercadopago" checked>
+                                <div class="contenido-tarjeta">
+                                    <span class="icono">💳</span>
+                                    <span class="titulo-opcion">Mercado Pago / Transferencia</span>
+                                </div>
+                            </label>
+
+                            <label class="tarjeta-opcion" id="tarjeta-efectivo">
+                                <input type="radio" name="metodo_pago" value="efectivo">
+                                <div class="contenido-tarjeta">
+                                    <span class="icono">💵</span>
+                                    <span class="titulo-opcion">Efectivo en el local</span>
+                                </div>
+                            </label>
+                        </div>
+                    </div>
                     <div class="form-group">
                         <label for="direccion">Dirección de Entrega</label>
                         <input type="text" id="direccion" placeholder="No es requerida para retirar">
