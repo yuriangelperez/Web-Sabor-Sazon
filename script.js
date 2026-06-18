@@ -1,7 +1,8 @@
 document.addEventListener('DOMContentLoaded', () => {
     // Estado del carrito en memoria
     let carrito = [];
-    let total = 0;
+    let totalProductos = 0;
+    let costoEnvio = 0;
 
     const carritoItemsDiv = document.getElementById('carrito-items');
     const carritoTotalSpan = document.getElementById('carrito-total');
@@ -21,21 +22,14 @@ document.addEventListener('DOMContentLoaded', () => {
                 const selectores = cardBody.querySelectorAll('.custom-select');
                 
                 selectores.forEach((select, index) => {
-                    // Intentamos buscar una etiqueta descriptiva (ej: "Arepa 1", "Empanada 2") 
-                    // que esté asociada al select, o usamos el placeholder/propio contexto.
                     let etiquetaItem = "";
-                    
-                    // Opción A: Buscar un elemento previo de texto o label
                     const labelPrevio = select.previousElementSibling;
                     if (labelPrevio && (labelPrevio.tagName === 'LABEL' || labelPrevio.tagName === 'SPAN')) {
                         etiquetaItem = labelPrevio.innerText.replace(':', '').trim();
                     } else {
-                        // Opción B: Si es un combo de Arepas, deducimos de manera genérica por su orden
-                        // Puedes ajustar estos nombres fijos si tus combos mezclan productos
                         if (producto.toLowerCase().includes('zulia')) {
                             etiquetaItem = `Arepa ${index + 1}`;
                         } else if (producto.toLowerCase().includes('maracay')) {
-                            // Maracay trae 2 arepas y 2 empanadas según tu menú
                             etiquetaItem = index < 2 ? `Arepa ${index + 1}` : `Empanada ${index - 1}`;
                         } else if (producto.toLowerCase().includes('vargas')) {
                             etiquetaItem = `Empanada ${index + 1}`;
@@ -45,13 +39,12 @@ document.addEventListener('DOMContentLoaded', () => {
                     }
 
                     gustosElegidos.push({
-                        componente: etiquetaItem, // Ejemplo: "Arepa 1"
-                        sabor: select.value       // Ejemplo: "Pollo"
+                        componente: etiquetaItem,
+                        sabor: select.value
                     });
                 });
             }
 
-            // Si NO hay selectores dinámicos (es un producto individual como una arepa suelta)
             if (gustosElegidos.length === 0) {
                 const nombreMinuscula = producto.toLowerCase();
                 let saborDetectado = "Tradicional";
@@ -68,7 +61,6 @@ document.addEventListener('DOMContentLoaded', () => {
             }
             // --------------------------------------
 
-            // Para verificar si ya existe el ítem idéntico (mismo producto y mismos gustos específicos)
             const itemExistente = carrito.find(item => 
                 item.producto === producto && 
                 JSON.stringify(item.gustos) === JSON.stringify(gustosElegidos)
@@ -81,11 +73,37 @@ document.addEventListener('DOMContentLoaded', () => {
                     producto, 
                     cantidad: 1, 
                     precio, 
-                    gustos: gustosElegidos // Estructura: [{componente: "Arepa 1", sabor: "Carne"}, ...]
+                    gustos: gustosElegidos 
                 });
             }
 
             actualizarInterfazCarrito();
+        }
+    });
+
+    // --- ESCUCHAR CAMBIOS EN EL TIPO DE ENTREGA ---
+    document.addEventListener('change', (e) => {
+        if (e.target && e.target.name === 'tipo_entrega') {
+            const inputDireccion = document.getElementById('direccion');
+            
+            if (e.target.value === 'envio') {
+                costoEnvio = 8000;
+                if (inputDireccion) {
+                    inputDireccion.required = true;
+                    inputDireccion.placeholder = "Ej. San Ignacio 663";
+                    inputDireccion.parentElement.style.opacity = "1";
+                }
+            } else {
+                costoEnvio = 0;
+                if (inputDireccion) {
+                    inputDireccion.required = false;
+                    inputDireccion.placeholder = "No es requerida para retirar";
+                    inputDireccion.value = ""; // Limpiamos si escribió algo
+                }
+            }
+            // Refrescamos el total visual inmediatamente
+            const totalGeneral = totalProductos + costoEnvio;
+            carritoTotalSpan.innerText = `$${totalGeneral.toLocaleString('es-AR')}`;
         }
     });
 
@@ -94,16 +112,16 @@ document.addEventListener('DOMContentLoaded', () => {
         if (carrito.length === 0) {
             carritoItemsDiv.innerHTML = '<p>El carrito está vacío. ¡Agrega tus arepas o combos favoritos!</p>';
             carritoTotalSpan.innerText = '$0';
-            total = 0;
+            totalProductos = 0;
             return;
         }
 
         carritoItemsDiv.innerHTML = '';
-        total = 0;
+        totalProductos = 0;
 
         carrito.forEach((item, index) => {
             const subtotal = item.precio * item.cantidad;
-            total += subtotal;
+            totalProductos += subtotal;
 
             const itemDiv = document.createElement('div');
             itemDiv.style.marginBottom = '14px';
@@ -121,7 +139,6 @@ document.addEventListener('DOMContentLoaded', () => {
             `;
             itemDiv.appendChild(filaPrincipal);
 
-            // Renderizar cada sub-elemento estructurado
             if (item.gustos && item.gustos.length > 0) {
                 const contenedorGustos = document.createElement('div');
                 contenedorGustos.style.fontSize = '12px';
@@ -130,7 +147,6 @@ document.addEventListener('DOMContentLoaded', () => {
                 contenedorGustos.style.paddingLeft = '20px';
                 contenedorGustos.style.lineHeight = '1.4';
 
-                // Mapeamos el array para mostrar "Arepa 1: Carne | Arepa 2: Pollo"
                 const lineasGustos = item.gustos.map(g => `<span style="color: #e4e4e7;">${g.componente}:</span> ${g.sabor}`);
                 contenedorGustos.innerHTML = lineasGustos.join('<br>');
                 
@@ -140,7 +156,25 @@ document.addEventListener('DOMContentLoaded', () => {
             carritoItemsDiv.appendChild(itemDiv);
         });
 
-        carritoTotalSpan.innerText = `$${total.toLocaleString('es-AR')}`;
+        // Si hay un costo de envío activo, lo añadimos visualmente como un ítem extra abajo del todo
+        if (costoEnvio > 0) {
+            const divEnvio = document.createElement('div');
+            divEnvio.style.display = 'flex';
+            divEnvio.style.justify = 'space-between';
+            divEnvio.style.fontSize = '13px';
+            divEnvio.style.color = '#a1a1aa';
+            divEnvio.style.marginTop = '8px';
+            divEnvio.style.borderTop = '1px dashed #3f3f46';
+            divEnvio.style.paddingTop = '8px';
+            divEnvio.innerHTML = `
+                <span>🛵 Costo de Envío</span>
+                <span>$${costoEnvio.toLocaleString('es-AR')}</span>
+            `;
+            carritoItemsDiv.appendChild(divEnvio);
+        }
+
+        const totalGeneral = totalProductos + costoEnvio;
+        carritoTotalSpan.innerText = `$${totalGeneral.toLocaleString('es-AR')}`;
 
         const botonesEliminar = carritoItemsDiv.querySelectorAll('.btn-eliminar');
         botonesEliminar.forEach(btn => {
@@ -165,11 +199,20 @@ document.addEventListener('DOMContentLoaded', () => {
             const nombre = document.getElementById('nombre').value;
             const telefonoInput = document.getElementById('telefono').value;
             const direccion = document.getElementById('direccion').value;
+            
+            // Capturamos cuál opción seleccionó (retiro o envio)
+            const tipoEntrega = document.querySelector('input[name="tipo_entrega"]:checked').value;
+            const textoEntrega = tipoEntrega === 'envio' ? '🛵 Envío a Domicilio' : '🏃‍♂️ Retiro por el Local';
 
+            const totalGeneral = totalProductos + costoEnvio;
+
+            // Conserva la estructura exacta para tu Backend en Render e incluye los nuevos datos
             const datosPedido = {
                 cliente: { nombre, telefono: telefonoInput, direccion },
                 items: carrito,
-                total: total
+                tipoEntrega: tipoEntrega,
+                costoEnvio: costoEnvio,
+                total: totalGeneral
             };
 
             try {
@@ -186,7 +229,14 @@ document.addEventListener('DOMContentLoaded', () => {
                     mensajeWA += `_ID de Orden: ${resultado.pedidoId}_\n\n`;
                     mensajeWA += `*Cliente:* ${nombre}\n`;
                     mensajeWA += `*Teléfono:* ${telefonoInput}\n`;
-                    mensajeWA += `*Dirección:* ${direccion}\n\n`;
+                    mensajeWA += `*Método:* ${textoEntrega}\n`;
+                    
+                    if (tipoEntrega === 'envio') {
+                        mensajeWA += `*Dirección:* ${direccion}\n\n`;
+                    } else {
+                        mensajeWA += `\n`;
+                    }
+                    
                     mensajeWA += `*Detalle de la compra:*\n`;
                     
                     carrito.forEach(item => {
@@ -197,8 +247,12 @@ document.addEventListener('DOMContentLoaded', () => {
                             });
                         }
                     });
+
+                    if (costoEnvio > 0) {
+                        mensajeWA += `• 🛵 *Costo de Envío:* $${costoEnvio.toLocaleString('es-AR')}\n`;
+                    }
                     
-                    mensajeWA += `\n*Total a Pagar:* $${total.toLocaleString('es-AR')}\n\n`;
+                    mensajeWA += `\n*Total General a Pagar:* $${totalGeneral.toLocaleString('es-AR')}\n\n`;
                     mensajeWA += `¿Me pasas los datos para el pago? ¡Muchas gracias!`;
 
                     const mensajeCodificado = encodeURIComponent(mensajeWA);
@@ -208,9 +262,16 @@ document.addEventListener('DOMContentLoaded', () => {
                     alert('¡Pedido guardado en el sistema! Redirigiendo a WhatsApp para procesar el pago...');
                     window.open(urlWhatsApp, '_blank');
 
+                    // Resetear todo
                     carrito = [];
+                    costoEnvio = 0;
                     actualizarInterfazCarrito();
                     formularioPedido.reset();
+                    
+                    // Volver a dejar la dirección por defecto opcional
+                    const inputDireccion = document.getElementById('direccion');
+                    if (inputDireccion) inputDireccion.required = false;
+                    
                 } else {
                     alert('Hubo un error en el servidor al procesar la orden.');
                 }

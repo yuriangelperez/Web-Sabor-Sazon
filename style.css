@@ -392,6 +392,91 @@ body {
     transform: translateY(-2px);
     box-shadow: 0 8px 20px rgba(var(--accent-gold-rgb), 0.2);
 }
+/* Contenedor principal en fila para desktop/mobile */
+.contenedor-entrega {
+    display: flex;
+    gap: 15px;
+    width: 100%;
+}
+
+/* Ocultamos por completo el circulito feo del radio button */
+.tarjeta-opcion input[type="radio"] {
+    display: none;
+}
+
+/* Diseño base de la tarjeta (Desactivada) */
+.tarjeta-opcion {
+    flex: 1;
+    cursor: pointer;
+    display: block;
+}
+
+.contenido-tarjeta {
+    background-color: #18181b; /* Fondo oscuro integrado al template */
+    border: 2px solid #3f3f46; /* Borde gris sutil */
+    border-radius: 10px;
+    padding: 12px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    text-align: center;
+    transition: all 0.25s ease;
+    gap: 4px;
+}
+
+/* Texto de los elementos dentro de la tarjeta */
+.contenido-tarjeta .icono {
+    font-size: 20px;
+    margin-bottom: 2px;
+}
+
+.contenido-tarjeta .titulo-opcion {
+    color: #ffffff;
+    font-size: 14px;
+    font-weight: 500;
+}
+
+.contenido-tarjeta .precio-opcion {
+    color: #a1a1aa;
+    font-size: 12px;
+}
+
+/* --- EFECTO HOVER (Pasar el mouse por encima) --- */
+.tarjeta-opcion:hover .contenido-tarjeta {
+    border-color: #71717a;
+    background-color: #202024;
+}
+
+/* --- MAGIA DEL ESTADO ACTIVO (Cuando está seleccionado) --- */
+/* Usamos el selector '+' para aplicar estilos al div contenedor hermano del input */
+.tarjeta-opcion input[type="radio"]:checked + .contenido-tarjeta {
+    border-color: #fabb3a; /* Tu dorado de Sabor y Sazón */
+    background-color: rgba(250, 187, 58, 0.08); /* Un destello sutil de fondo */
+    box-shadow: 0 0 12px rgba(250, 187, 58, 0.2);
+}
+
+.tarjeta-opcion input[type="radio"]:checked + .contenido-tarjeta .titulo-opcion {
+    color: #fabb3a; /* El texto principal se vuelve dorado */
+}
+
+.tarjeta-opcion input[type="radio"]:checked + .contenido-tarjeta .precio-opcion {
+    color: #ffffff;
+    font-weight: bold;
+}
+
+/* Adaptación responsiva para pantallas muy chicas */
+@media (max-width: 480px) {
+    .contenedor-entrega {
+        flex-direction: row; /* Mantiene uno al lado del otro, si queda muy ajustado podés cambiar a 'column' */
+        gap: 10px;
+    }
+    .contenido-tarjeta {
+        padding: 10px 6px;
+    }
+    .contenido-tarjeta .titulo-opcion {
+        font-size: 13px;
+    }
+}
 
 /* ==========================================================================
    SECCIÓN DE PERSONALIZACIÓN DE COMBOS (SELECTS PREMIUM)
