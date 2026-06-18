@@ -1,0 +1,417 @@
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sabor y Sazón | El auténtico sabor venezolano</title>
+    <link rel="stylesheet" href="style.css">
+    <!-- Fuente premium desde Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600;700&display=swap" rel="stylesheet">
+</head>
+
+<body>
+
+    <!-- BARRA DE NAVEGACIÓN -->
+    <header class="navbar">
+        <div class="logo">
+            <span id="color1">Sabor</span><span id="color2"> y </span><span id="color3">Sazón</span>
+        </div>
+        <nav>
+            <ul class="nav-links">
+                <li><a href="#inicio">Inicio</a></li>
+                <li><a href="#menu">Menú</a></li>
+                <li><a href="#nosotros">Nosotros</a></li>
+                <li><a href="#contacto">Contacto</a></li>
+            </ul>
+        </nav>
+    </header>
+
+    <!-- SECCIÓN HERO (BIENVENIDA) -->
+    <section id="inicio" class="hero">
+        <div class="hero-content">
+            <h1>El auténtico sabor venezolano en tu mesa</h1>
+            <p>Disfruta de las mejores arepas, cachapas y tequeños preparados con la receta tradicional de la casa.</p>
+            <div class="hero-buttons">
+                <a href="#menu" class="btn btn-primary">Ver Menú</a>
+                <a href="https://wa.me/541125523930" target="_blank" class="btn btn-secondary">Pedir Delivery</a>
+            </div>
+        </div>
+    </section>
+
+    <!-- SECCIÓN MENÚ COMPLETO -->
+    <!-- SECCIÓN MENÚ COMPLETO INTERACTIVO -->
+    <section id="menu" class="menu-section">
+        <div class="menu-container">
+
+            <header class="menu-header">
+                <span class="menu-tag">Carta Tradicional</span>
+                <h2>Sabor & Sazón</h2>
+                <p class="subtitle">El auténtico sabor venezolano hecho en casa</p>
+                <div class="header-line"></div>
+            </header>
+
+            <!-- CATEGORÍA: COMBOS -->
+            <div class="menu-category">
+                <div class="category-header">
+                    <h3>Nuestros Combos</h3>
+                    <span class="category-decor"></span>
+                </div>
+
+                <div class="menu-grid">
+                    <div class="menu-card featured">
+                        <div class="card-body">
+                            <div class="item-title-row">
+                                <h4>Combo Caracas</h4>
+                                <span class="dots"></span>
+                                <span class="price">$29.249</span>
+                            </div>
+                            <p class="description">2 arepas acompañadas de 12 tequeños crujientes junto a nuestra salsa
+                                especial de la casa.</p>
+                            <button class="btn-agregar" data-producto="Combo Caracas" data-precio="29249"
+                                style="margin-top:15px; padding:10px; font-size:13px; width:100%; cursor:pointer;">+
+                                Agregar al Pedido</button>
+                        </div>
+                    </div>
+
+                    <div class="menu-card featured">
+                        <div class="card-body">
+                            <div class="item-title-row">
+                                <h4>Combo Zulia</h4>
+                                <span class="dots"></span>
+                                <span class="price">$44.249</span>
+                            </div>
+                            <p class="description">4 arepas tradicionales a elección, ideales para compartir, con 12
+                                tequeños y salsa.</p>
+                            <button class="btn-agregar" data-producto="Combo Zulia" data-precio="44249"
+                                style="margin-top:15px; padding:10px; font-size:13px; width:100%; cursor:pointer;">+
+                                Agregar al Pedido</button>
+                        </div>
+                    </div>
+
+                    <div class="menu-card featured">
+                        <div class="card-body">
+                            <div class="item-title-row">
+                                <h4>Combo Maracay</h4>
+                                <span class="dots"></span>
+                                <span class="price">$30.399</span>
+                            </div>
+                            <p class="description">La combinación perfecta: 2 arepas, 2 empanadas doradas, 6 tequeños y
+                                salsa criolla.</p>
+                            <button class="btn-agregar" data-producto="Combo Maracay" data-precio="30399"
+                                style="margin-top:15px; padding:10px; font-size:13px; width:100%; cursor:pointer;">+
+                                Agregar al Pedido</button>
+                        </div>
+                    </div>
+
+                    <div class="menu-card featured">
+                        <div class="card-body">
+                            <div class="item-title-row">
+                                <h4>Combo Vargas</h4>
+                                <span class="dots"></span>
+                                <span class="price">$15.399</span>
+                            </div>
+                            <p class="description">Para un antojo rápido: 2 empanadas operadas a elección, 6 tequeños y
+                                salsa.</p>
+                            <button class="btn-agregar" data-producto="Combo Vargas" data-precio="15399"
+                                style="margin-top:15px; padding:10px; font-size:13px; width:100%; cursor:pointer;">+
+                                Agregar al Pedido</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- CATEGORÍA: AREPAS -->
+            <div class="menu-category">
+                <div class="category-header">
+                    <h3>Arepas</h3>
+                    <span class="category-decor"></span>
+                </div>
+                <div class="menu-grid standard">
+                    <div class="menu-card">
+                        <div class="item-title-row">
+                            <h4>Pollo</h4>
+                            <span class="dots"></span>
+                            <span class="price">$7.499</span>
+                        </div>
+                        <button class="btn-agregar" data-producto="Arepa de Pollo" data-precio="7499"
+                            style="margin-top:10px; padding:6px; font-size:12px; cursor:pointer;">+ Agregar</button>
+                    </div>
+                    <div class="menu-card">
+                        <div class="item-title-row">
+                            <h4>Queso</h4>
+                            <span class="dots"></span>
+                            <span class="price">$7.499</span>
+                        </div>
+                        <button class="btn-agregar" data-producto="Arepa de Queso" data-precio="7499"
+                            style="margin-top:10px; padding:6px; font-size:12px; cursor:pointer;">+ Agregar</button>
+                    </div>
+                    <div class="menu-card">
+                        <div class="item-title-row">
+                            <h4>Carne Mechada</h4>
+                            <span class="dots"></span>
+                            <span class="price">$7.499</span>
+                        </div>
+                        <button class="btn-agregar" data-producto="Arepa Carne Mechada" data-precio="7499"
+                            style="margin-top:10px; padding:6px; font-size:12px; cursor:pointer;">+ Agregar</button>
+                    </div>
+                    <div class="menu-card">
+                        <div class="item-title-row">
+                            <h4>Dominó</h4>
+                            <span class="dots"></span>
+                            <span class="price">$7.499</span>
+                        </div>
+                        <p class="description">Deliciosa combinación de porotos negros con queso blanco rallado.</p>
+                        <button class="btn-agregar" data-producto="Arepa Dominó" data-precio="7499"
+                            style="margin-top:10px; padding:6px; font-size:12px; cursor:pointer;">+ Agregar</button>
+                    </div>
+                    <div class="menu-card">
+                        <div class="item-title-row">
+                            <h4>Catira</h4>
+                            <span class="dots"></span>
+                            <span class="price">$7.949</span>
+                        </div>
+                        <p class="description">Pollo desmechado jugoso coronado con abundante queso amarillo.</p>
+                        <button class="btn-agregar" data-producto="Arepa Catira" data-precio="7949"
+                            style="margin-top:10px; padding:6px; font-size:12px; cursor:pointer;">+ Agregar</button>
+                    </div>
+                    <div class="menu-card">
+                        <div class="item-title-row">
+                            <h4>Pelúa</h4>
+                            <span class="dots"></span>
+                            <span class="price">$7.949</span>
+                        </div>
+                        <p class="description">La favorita: carne mechada bien sazonada combinada con queso amarillo.
+                        </p>
+                        <button class="btn-agregar" data-producto="Arepa Pelúa" data-precio="7949"
+                            style="margin-top:10px; padding:6px; font-size:12px; cursor:pointer;">+ Agregar</button>
+                    </div>
+                    <div class="menu-card full-width">
+                        <div class="item-title-row">
+                            <h4>Pabellón</h4>
+                            <span class="dots"></span>
+                            <span class="price">$8.199</span>
+                        </div>
+                        <p class="description">El plato nacional en una arepa: carne mechada, porotos negros
+                            tradicionales y láminas de queso blanco.</p>
+                        <button class="btn-agregar" data-producto="Arepa Pabellón" data-precio="8199"
+                            style="margin-top:10px; padding:8px; font-size:12px; cursor:pointer;">+ Agregar al
+                            Pedido</button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- CATEGORÍA: EMPANADAS VENEZOLANAS -->
+            <div class="menu-category">
+                <div class="category-header">
+                    <h3>Empanadas Venezolanas</h3>
+                    <span class="category-decor"></span>
+                </div>
+                <div class="menu-grid standard">
+                    <div class="menu-card">
+                        <div class="item-title-row">
+                            <h4>Pollo</h4><span class="dots"></span><span class="price">$4.099</span>
+                        </div>
+                        <button class="btn-agregar" data-producto="Empanada Pollo" data-precio="4099"
+                            style="margin-top:10px; padding:6px; font-size:12px; cursor:pointer;">+ Agregar</button>
+                    </div>
+                    <div class="menu-card">
+                        <div class="item-title-row">
+                            <h4>Queso</h4><span class="dots"></span><span class="price">$4.099</span>
+                        </div>
+                        <button class="btn-agregar" data-producto="Empanada Queso" data-precio="4099"
+                            style="margin-top:10px; padding:6px; font-size:12px; cursor:pointer;">+ Agregar</button>
+                    </div>
+                    <div class="menu-card">
+                        <div class="item-title-row">
+                            <h4>Carne Mechada</h4><span class="dots"></span><span class="price">$4.099</span>
+                        </div>
+                        <button class="btn-agregar" data-producto="Empanada Carne Mechada" data-precio="4099"
+                            style="margin-top:10px; padding:6px; font-size:12px; cursor:pointer;">+ Agregar</button>
+                    </div>
+                    <div class="menu-card">
+                        <div class="item-title-row">
+                            <h4>Porotos</h4><span class="dots"></span><span class="price">$4.099</span>
+                        </div>
+                        <button class="btn-agregar" data-producto="Empanada Porotos" data-precio="4099"
+                            style="margin-top:10px; padding:6px; font-size:12px; cursor:pointer;">+ Agregar</button>
+                    </div>
+                    <div class="menu-card">
+                        <div class="item-title-row">
+                            <h4>Dominó</h4><span class="dots"></span><span class="price">$4.099</span>
+                        </div>
+                        <button class="btn-agregar" data-producto="Empanada Dominó" data-precio="4099"
+                            style="margin-top:10px; padding:6px; font-size:12px; cursor:pointer;">+ Agregar</button>
+                    </div>
+                    <div class="menu-card">
+                        <div class="item-title-row">
+                            <h4>Catira</h4><span class="dots"></span><span class="price">$4.249</span>
+                        </div>
+                        <button class="btn-agregar" data-producto="Empanada Catira" data-precio="4249"
+                            style="margin-top:10px; padding:6px; font-size:12px; cursor:pointer;">+ Agregar</button>
+                    </div>
+                    <div class="menu-card">
+                        <div class="item-title-row">
+                            <h4>Pelúa</h4><span class="dots"></span><span class="price">$4.249</span>
+                        </div>
+                        <button class="btn-agregar" data-producto="Empanada Pelúa" data-precio="4249"
+                            style="margin-top:10px; padding:6px; font-size:12px; cursor:pointer;">+ Agregar</button>
+                    </div>
+                    <div class="menu-card">
+                        <div class="item-title-row">
+                            <h4>Pabellón</h4><span class="dots"></span><span class="price">$4.499</span>
+                        </div>
+                        <button class="btn-agregar" data-producto="Empanada Pabellón" data-precio="4499"
+                            style="margin-top:10px; padding:6px; font-size:12px; cursor:pointer;">+ Agregar</button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- CATEGORÍA: TEQUEÑOS -->
+            <div class="menu-category">
+                <div class="category-header">
+                    <h3>Tequeños</h3>
+                    <span class="category-decor"></span>
+                </div>
+                <div class="menu-grid standard">
+                    <div class="menu-card">
+                        <div class="item-title-row">
+                            <h4>Tequeños Fritos x12</h4><span class="dots"></span><span class="price">$14.249</span>
+                        </div>
+                        <button class="btn-agregar" data-producto="Tequeños Fritos x12" data-precio="14249"
+                            style="margin-top:10px; padding:6px; font-size:12px; cursor:pointer;">+ Agregar</button>
+                    </div>
+                    <div class="menu-card">
+                        <div class="item-title-row">
+                            <h4>Tequeños Fritos x6</h4><span class="dots"></span><span class="price">$7.199</span>
+                        </div>
+                        <button class="btn-agregar" data-producto="Tequeños Fritos x6" data-precio="7199"
+                            style="margin-top:10px; padding:6px; font-size:12px; cursor:pointer;">+ Agregar</button>
+                    </div>
+                    <div class="menu-card">
+                        <div class="item-title-row">
+                            <h4>Tequeños Congelados x12</h4><span class="dots"></span><span class="price">$14.149</span>
+                        </div>
+                        <button class="btn-agregar" data-producto="Tequeños Congelados x12" data-precio="14149"
+                            style="margin-top:10px; padding:6px; font-size:12px; cursor:pointer;">+ Agregar</button>
+                    </div>
+                    <div class="menu-card">
+                        <div class="item-title-row">
+                            <h4>Tequeños Congelados x6</h4><span class="dots"></span><span class="price">$7.099</span>
+                        </div>
+                        <button class="btn-agregar" data-producto="Tequeños Congelados x6" data-precio="7099"
+                            style="margin-top:10px; padding:6px; font-size:12px; cursor:pointer;">+ Agregar</button>
+                    </div>
+                    <div class="menu-card highlight">
+                        <div class="item-title-row">
+                            <h4>Tequeños Fritos Promoción</h4>
+                            <span class="dots"></span>
+                            <span class="price">$9.599</span>
+                        </div>
+                        <p class="description">8 unidades de tequeños fritos dorados acompañados con nuestra salsa
+                            tártara artesanal.</p>
+                        <button class="btn-agregar" data-producto="Tequeños Fritos Promoción x8" data-precio="9599"
+                            style="margin-top:10px; padding:8px; font-size:12px; cursor:pointer;">+ Agregar al
+                            Pedido</button>
+                    </div>
+                    <div class="menu-card">
+                        <div class="item-title-row">
+                            <h4>Tequeños x20</h4><span class="dots"></span><span class="price">$23.699</span>
+                        </div>
+                        <button class="btn-agregar" data-producto="Tequeños x20" data-precio="23699"
+                            style="margin-top:10px; padding:6px; font-size:12px; cursor:pointer;">+ Agregar</button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- BANNER DE COMPRA DIRECTA -->
+            <div class="smart-promo-banner">
+                <div class="promo-badge">Ahorro Exclusivo</div>
+                <h3>¡Pedí Directo y Ahorrá un 25%!</h3>
+                <p>Evitá las comisiones excesivas de las apps de delivery. Comprando directamente por nuestros canales
+                    oficiales te garantizamos un precio un 25% más barato que en PedidosYa.</p>
+                <div class="promo-actions">
+                    <a href="#checkout" class="btn-promo">Armar mi Pedido Ahora</a>
+                </div>
+            </div>
+
+        </div>
+    </section>
+    <!-- SECCIÓN FORMULARIO DE PEDIDO (CHECKOUT) -->
+    <section id="checkout" class="checkout-section">
+        <div class="checkout-container">
+            <div class="checkout-card">
+                <h3>Tu Pedido</h3>
+
+                <!-- Aquí el JavaScript va a renderizar los productos elegidos -->
+                <div id="carrito-items" style="color: var(--text-secondary); margin-bottom: 15px; font-size: 14px;">
+                    <p>El carrito está vacío. ¡Agrega tus arepas o combos favoritos!</p>
+                </div>
+
+                <div
+                    style="display: flex; justify-content: space-between; margin-bottom: 25px; border-top: 1px dashed rgba(255,255,255,0.1); padding-top: 15px;">
+                    <strong>Total a Pagar:</strong>
+                    <span id="carrito-total"
+                        style="color: var(--accent-gold); font-weight: bold; font-size: 18px;">$0</span>
+                </div>
+
+                <h3>Datos de Entrega</h3>
+                <p>Completá tus datos para coordinar el pago y envío por WhatsApp.</p>
+                <form id="form-pedido">
+                    <div class="form-group">
+                        <label for="nombre">Nombre Completo</label>
+                        <input type="text" id="nombre" placeholder="Ej. Yuri Test" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="telefono">Teléfono de Contacto</label>
+                        <input type="text" id="telefono" placeholder="Ej. 1125523930" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="direccion">Dirección de Entrega</label>
+                        <input type="text" id="direccion" placeholder="Ej. San Ignacio 663" required>
+                    </div>
+                    <button type="submit" class="btn-submit">Confirmar y Pagar por WhatsApp</button>
+                </form>
+            </div>
+        </div>
+    </section>
+
+    <!-- SECCIÓN: NOSOTROS -->
+    <section id="nosotros" style="padding: 80px 8%; text-align: center; background-color: #0e0e11;">
+        <h2 style="color: var(--accent-gold); font-size: 32px; margin-bottom: 20px; text-transform: uppercase;">Nuestra
+            Historia</h2>
+        <p style="color: var(--text-secondary); max-width: 700px; margin: 0 auto; font-size: 16px; font-weight: 300;">
+            Llevamos el sabor auténtico de la cocina tradicional venezolana a cada plato. Preparados de manera artesanal
+            y con ingredientes 100% frescos para ofrecerte una experiencia gastronomímica única e inolvidable.
+        </p>
+    </section>
+
+    <!-- PIE DE PÁGINA Y CONTACTO -->
+    <footer id="contacto" class="footer">
+        <div class="footer-content">
+            <div class="footer-info">
+                <h3>Horarios</h3>
+                <p>Martes a Domingo: 12:00 PM - 11:00 PM</p>
+                <p>Lunes: Cerrado</p>
+            </div>
+            <div class="footer-info">
+                <h3>Ubicación</h3>
+                <p>San Ignacio 663, Manuel Alberti</p>
+                <p>Buenos Aires, Argentina</p>
+            </div>
+            <div class="footer-info">
+                <h3>Contacto</h3>
+                <p>WhatsApp: 11 2552-3930</p>
+                <p>Teléfono: 3757 61-2971</p>
+            </div>
+        </div>
+        <div class="footer-bottom">
+            <p>&copy; 2026 Sabor y Sazón. Todos los derechos reservados.</p>
+        </div>
+    </footer>
+    <script src="script.js"></script>
+</body>
+
+</html>
