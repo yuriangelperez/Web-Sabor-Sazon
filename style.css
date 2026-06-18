@@ -1086,3 +1086,62 @@ body {
     transform: scale(1.05);
     transition: all 0.2s ease;
 }
+
+/* ==========================================================================
+   NUEVOS ESTILOS PARA SELECTORES COMPACTOS (EN PARALELO)
+   ========================================================================== */
+
+/* Contenedor principal de Flexbox que alinea los selectores uno al lado del otro */
+.grupo-selectores {
+    display: flex;
+    gap: 10px;               /* Espacio de separación entre el selector izquierdo y derecho */
+    margin-bottom: 12px;     /* Separación vertical con el siguiente elemento */
+    width: 100%;
+    box-sizing: border-box;
+}
+
+/* Cada columna individual adentro del flex (50% de ancho para cada uno) */
+.item-select {
+    flex: 1;                 /* Distribuye el espacio de forma equitativa */
+    display: flex;
+    flex-direction: column;  /* Alinea la etiqueta arriba y el select abajo */
+}
+
+/* Estilo para los textos guía (Arepa 1, Tipo Arepa, Cocción, etc.) */
+.select-label {
+    color: #a0a0a0;          /* Gris sutil para que no opaque los títulos principales */
+    font-size: 12px;         /* Un toque más chico para un diseño fino */
+    margin-bottom: 4px;      /* Espacio entre la etiqueta y su respectivo selector */
+    text-align: left;
+    font-weight: 500;
+}
+
+/* Rediseño completo de los selectores: más cortos y compactos */
+.custom-select {
+    width: 100%;
+    height: 34px;            /* Altura fija compacta para que queden petisos */
+    padding: 0 8px;          /* Relleno interno a los lados */
+    font-size: 13px;         /* Tipografía equilibrada al tamaño del cuadro */
+    border-radius: 6px;      /* Bordes sutilmente redondeados */
+    background-color: #1a1a1a; /* Fondo oscuro relleno */
+    color: #ffffff;          /* Texto blanco */
+    border: 1px solid #333333; /* Borde oscuro para el diseño premium */
+    cursor: pointer;
+    box-sizing: border-box;
+    transition: border-color 0.2s ease, box-shadow 0.2s ease;
+}
+
+/* Efecto visual cuando el usuario hace clic o foco en el selector */
+.custom-select:focus {
+    border-color: #fabb3a;   /* Borde dorado de tu marca */
+    outline: none;
+    box-shadow: 0 0 4px rgba(250, 187, 58, 0.2); /* Brillo sutil */
+}
+
+/* Asegura que la grilla de personalización interna maneje bien los tamaños */
+.item-customization-grid {
+    display: flex;
+    flex-direction: column;
+    width: 100%;
+    margin-top: 10px;
+}
