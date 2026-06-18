@@ -1,10 +1,21 @@
 document.addEventListener('DOMContentLoaded', () => {
-    // Despertar el backend en Render al iniciar la página
-    fetch('https://web-sabor-sazon.onrender.com/api/pedidos')
-        .then(() => console.log('Backend despertado exitosamente.'))
-        .catch(err => console.log('El backend está arrancando...'));
+    // --- NUEVO: DETECTAR SI EL CLIENTE VUELVE DE PAGAR ---
+    const urlParams = new URLSearchParams(window.location.search);
+    const status = urlParams.get('status');
 
-    // Estado del carrito en memoria
+    if (status === 'success') {
+        const urlWA = localStorage.getItem('pending_whatsapp_url');
+        if (urlWA) {
+            localStorage.removeItem('pending_whatsapp_url'); // Limpiamos la memoria interna
+            alert('¡Pago aprobado con éxito! Redirigiendo a WhatsApp para avisar al local...');
+            window.open(urlWA, '_self'); // Abre tu mensaje formateado de WhatsApp en la misma pestaña
+        }
+    } else if (status === 'failure') {
+        alert('El pago no pudo procesarse o fue cancelado. Por favor, intenta de nuevo o comunícate con nosotros.');
+    }
+    // -----------------------------------------------------
+
+    // Estado del carrito en memoria (sigue el resto de tus variables iguales...)
     let carrito = [];
     let totalProductos = 0;
     let costoEnvio = 0;
@@ -277,6 +288,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 total: totalGeneral
             };
 
+            // ... (Toda la primera parte del formulario queda exactamente igual) ...
             try {
                 const respuesta = await fetch('https://web-sabor-sazon.onrender.com/api/pedidos', {
                     method: 'POST',
@@ -313,28 +325,34 @@ document.addEventListener('DOMContentLoaded', () => {
                         mensajeWA += `• *Costo de Envío:* $${costoEnvio.toLocaleString('es-AR')}\n`;
                     }
 
-                    mensajeWA += `\n*Total General a Pagar:* $${totalGeneral.toLocaleString('es-AR')}\n\n`;
-                    mensajeWA += `¿Me pasas los datos para el pago? ¡Muchas gracias!`;
+                    // Cambiamos el mensaje para reflejar que ya se pagó electrónicamente
+                    mensajeWA += `\n*Total General Pagado:* $${totalGeneral.toLocaleString('es-AR')}\n\n`;
+                    mensajeWA += `¡Ya realicé el pago de forma online por Mercado Pago! ✨`;
 
                     const mensajeCodificado = encodeURIComponent(mensajeWA);
                     const numeroNegocio = "541125523930";
                     const urlWhatsApp = `https://wa.me/${numeroNegocio}?text=${mensajeCodificado}`;
 
-                    alert('¡Pedido guardado en el sistema! Redirigiendo a WhatsApp para procesar el pago...');
-                    window.open(urlWhatsApp, '_blank');
+                  
+                    // 1. Guardamos la URL de WhatsApp en memoria para usarla al regresar del pago
+                    localStorage.setItem('pending_whatsapp_url', urlWhatsApp);
 
+                    // 2. Limpiamos las variables locales y reseteamos el formulario antes de irnos
                     carrito = [];
                     costoEnvio = 0;
                     actualizarInterfazCarrito();
                     formularioPedido.reset();
-
                     const inputDireccion = document.getElementById('direccion');
                     if (inputDireccion) inputDireccion.required = false;
 
+                    // 3. Avisamos al usuario y lo mandamos de una al Checkout de Mercado Pago
+                    alert('¡Pedido guardado! Redirigiendo a Mercado Pago para completar tu pago...');
+                    window.location.href = resultado.initPoint; // <--- Abre Mercado Pago en la misma pestaña
+
+                  
                 } else {
                     alert('Hubo un error en el servidor al procesar la orden.');
                 }
-
             } catch (error) {
                 console.error('Error de red:', error);
                 alert('No se pudo conectar con el servidor backend.');
