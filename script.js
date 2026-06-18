@@ -15,7 +15,7 @@ document.addEventListener('DOMContentLoaded', () => {
     }
     // -----------------------------------------------------
 
-    // Estado del carrito en memoria (sigue el resto de tus variables iguales...)
+    // Estado del carrito en memoria
     let carrito = [];
     let totalProductos = 0;
     let costoEnvio = 0;
@@ -61,9 +61,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 });
             }
 
-            // Si no es un combo (no tiene selectores), gustosElegidos queda perfectamente vacío []
-
-            // --- LOGICA DE AGREGAR AL CARRITO (Movida adentro del IF principal) ---
+            // --- LOGICA DE AGREGAR AL CARRITO ---
             const itemExistente = carrito.find(item =>
                 item.producto === producto &&
                 JSON.stringify(item.gustos) === JSON.stringify(gustosElegidos)
@@ -76,7 +74,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     producto: producto,
                     cantidad: 1,
                     precio: precio,
-                    gustos: gustosElegidos // Sube con datos si es combo, o [] si es suelto
+                    gustos: gustosElegidos
                 });
             }
 
@@ -84,14 +82,13 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     });
 
-    // --- ESCUCHAR CAMBIOS EN EL TIPO DE ENTREGA ---
+    // --- ESCUCHAR CAMBIOS EN EL TIPO DE ENTREGA Y MÉTODO DE PAGO ---
     document.addEventListener('change', (e) => {
         if (e.target && e.target.name === 'tipo_entrega') {
             const inputDireccion = document.getElementById('direccion');
-
-            // 🔥 NUEVO: Capturamos los elementos de pago
             const tarjetaEfectivo = document.getElementById('tarjeta-efectivo');
             const inputMercadoPago = document.querySelector('input[name="metodo_pago"][value="mercadopago"]');
+            const metodoPagoActivo = document.querySelector('input[name="metodo_pago"]:checked')?.value;
 
             if (e.target.value === 'envio') {
                 costoEnvio = 8000;
@@ -101,10 +98,11 @@ document.addEventListener('DOMContentLoaded', () => {
                     inputDireccion.parentElement.style.opacity = "1";
                 }
 
-                // 🔥 NUEVO: Ocultamos efectivo y obligamos a que se seleccione Mercado Pago
                 if (tarjetaEfectivo) tarjetaEfectivo.style.display = 'none';
-                if (inputMercadoPago) inputMercadoPago.checked = true;
 
+                if (metodoPagoActivo === 'efectivo' && inputMercadoPago) {
+                    inputMercadoPago.checked = true;
+                }
             } else {
                 costoEnvio = 0;
                 if (inputDireccion) {
@@ -113,22 +111,23 @@ document.addEventListener('DOMContentLoaded', () => {
                     inputDireccion.value = "";
                 }
 
-                // 🔥 NUEVO: Volvemos a mostrar la opción de efectivo si elige Retiro
-                if (tarjetaEfectivo) tarjetaEfectivo.style.display = 'flex'; // Usamos flex para mantener tu estructura de tarjeta
+                if (tarjetaEfectivo) tarjetaEfectivo.style.display = 'flex';
             }
 
-            const totalGeneral = totalProductos + costoEnvio;
-            carritoTotalSpan.innerText = `$${totalGeneral.toLocaleString('es-AR')}`;
+            actualizarInterfazCarrito();
+        }
+
+        if (e.target && e.target.name === 'metodo_pago') {
+            actualizarInterfazCarrito();
         }
     });
-    // 2. Función para redibujar el resumen del pedido ("Tu Pedido" y "Sidebar")
+
+    // --- 2. FUNCIÓN ÚNICA PARA REDIBUJAR EL CARRITO Y CALCULAR VALORES (UNIFICADA) ---
     function actualizarInterfazCarrito() {
-        // Capturamos los nuevos elementos del Sidebar
         const sidebarItemsDiv = document.getElementById('cart-sidebar-items');
         const sidebarTotalSpan = document.getElementById('cart-sidebar-total');
         const floatingCountSpan = document.getElementById('cart-floating-count');
 
-        // Calcular cantidad total de unidades en el carrito para el badge flotante
         let totalUnidades = 0;
         carrito.forEach(item => totalUnidades += item.cantidad);
         if (floatingCountSpan) {
@@ -147,7 +146,6 @@ document.addEventListener('DOMContentLoaded', () => {
             return;
         }
 
-        // Limpiamos los contenedores antes de redibujar
         if (carritoItemsDiv) carritoItemsDiv.innerHTML = '';
         if (sidebarItemsDiv) sidebarItemsDiv.innerHTML = '';
         totalProductos = 0;
@@ -156,7 +154,7 @@ document.addEventListener('DOMContentLoaded', () => {
             const subtotal = item.precio * item.cantidad;
             totalProductos += subtotal;
 
-            // --- 1. Crear nodo para el Checkout Tradicional ---
+            // Nodo para Checkout Tradicional
             const itemDivCheckout = document.createElement('div');
             itemDivCheckout.style.marginBottom = '14px';
 
@@ -168,12 +166,18 @@ document.addEventListener('DOMContentLoaded', () => {
                 <span style="color: #ffffff; font-weight: 500;">${item.cantidad}x ${item.producto}</span>
                 <div style="display: flex; align-items: center; gap: 10px;">
                     <span style="color: #ffffff; font-weight: 600;">$${subtotal.toLocaleString('es-AR')}</span>
-                    <button class="btn-eliminar" data-index="${index}" style="background: none; border: none; color: #ef4444; cursor: pointer; font-size: 13px; padding: 0 4px;">✕</button>
+                    <button
+    type="button"
+    class="btn-eliminar"
+    data-index="${index}"
+    style="background: none; border: none; color: #ef4444; cursor: pointer; font-size: 13px; padding: 0 4px;">
+    ✕
+</button>
                 </div>
             `;
             itemDivCheckout.appendChild(filaPrincipalCheckout);
 
-            // --- 2. Crear nodo clonado para el Sidebar Flotante ---
+            // Nodo para Sidebar Flotante
             const itemDivSidebar = document.createElement('div');
             itemDivSidebar.style.marginBottom = '14px';
             itemDivSidebar.style.borderBottom = '1px solid rgba(255,255,255,0.03)';
@@ -187,12 +191,17 @@ document.addEventListener('DOMContentLoaded', () => {
                 <span style="color: #ffffff; font-weight: 500; font-size: 14px;">${item.cantidad}x ${item.producto}</span>
                 <div style="display: flex; align-items: center; gap: 10px;">
                     <span style="color: var(--accent-gold); font-weight: 600; font-size: 14px;">$${subtotal.toLocaleString('es-AR')}</span>
-                    <button class="btn-eliminar-sidebar" data-index="${index}" style="background: none; border: none; color: #ef4444; cursor: pointer; font-size: 13px; padding: 0 4px;">✕</button>
-                </div>
+<button
+    type="button"
+    class="btn-eliminar-sidebar"
+    data-index="${index}"
+    style="background: none; border: none; color: #ef4444; cursor: pointer; font-size: 13px; padding: 0 4px;">
+    ✕
+</button>
+                    </div>
             `;
             itemDivSidebar.appendChild(filaPrincipalSidebar);
 
-            // Lógica de gustos desglosados (se aplica a ambas vistas)
             if (item.gustos && item.gustos.length > 0) {
                 const generarHTMLGustos = () => {
                     const contenedor = document.createElement('div');
@@ -214,7 +223,6 @@ document.addEventListener('DOMContentLoaded', () => {
             if (sidebarItemsDiv) sidebarItemsDiv.appendChild(itemDivSidebar);
         });
 
-        // Si hay costo de envío activo, añadirlo a ambas vistas
         if (costoEnvio > 0) {
             const generarHTMLEnvio = () => {
                 const divEnvio = document.createElement('div');
@@ -235,29 +243,62 @@ document.addEventListener('DOMContentLoaded', () => {
             if (sidebarItemsDiv) sidebarItemsDiv.appendChild(generarHTMLEnvio());
         }
 
-        const totalGeneral = totalProductos + costoEnvio;
+        // 🔥 OBTENER EL MÉTODO DE PAGO Y CALCULAR EL DESCUENTO AUTOMÁTICO
+        const metodoPagoActivo = document.querySelector('input[name="metodo_pago"]:checked')?.value;
+        let descuento = 0;
+        if (metodoPagoActivo === 'efectivo' || metodoPagoActivo === 'transferencia') {
+            descuento = totalProductos * 0.05;
+        }
+
+        // Añadimos fila visual de descuento a las listas si corresponde
+        if (descuento > 0) {
+            const generarHTMLDescuento = () => {
+                const divDesc = document.createElement('div');
+                divDesc.style.display = 'flex';
+                divDesc.style.justifyContent = 'space-between';
+                divDesc.style.fontSize = '13px';
+                divDesc.style.color = '#fabb3a';
+                divDesc.style.marginTop = '4px';
+                divDesc.innerHTML = `
+                    <span>🔥 Descuento 5% OFF</span>
+                    <span>-$${descuento.toLocaleString('es-AR')}</span>
+                `;
+                return divDesc;
+            };
+            if (carritoItemsDiv) carritoItemsDiv.appendChild(generarHTMLDescuento());
+            if (sidebarItemsDiv) sidebarItemsDiv.appendChild(generarHTMLDescuento());
+        }
+
+        const totalGeneral = (totalProductos - descuento) + costoEnvio;
         if (carritoTotalSpan) carritoTotalSpan.innerText = `$${totalGeneral.toLocaleString('es-AR')}`;
         if (sidebarTotalSpan) sidebarTotalSpan.innerText = `$${totalGeneral.toLocaleString('es-AR')}`;
 
-        // Asignar escuchadores de eliminación en el Checkout tradicional
-        const botonesEliminar = carritoItemsDiv.querySelectorAll('.btn-eliminar');
-        botonesEliminar.forEach(btn => {
+        // Escuchadores de eliminación
+        carritoItemsDiv.querySelectorAll('.btn-eliminar').forEach(btn => {
             btn.addEventListener('click', () => {
-                const idx = parseInt(btn.getAttribute('data-index'));
-                carrito.splice(idx, 1);
+                carrito.splice(parseInt(btn.getAttribute('data-index')), 1);
                 actualizarInterfazCarrito();
             });
         });
+        sidebarItemsDiv.querySelectorAll('.btn-eliminar-sidebar').forEach(btn => {
+            btn.addEventListener('click', () => {
+                carrito.splice(parseInt(btn.getAttribute('data-index')), 1);
+                actualizarInterfazCarrito();
+            });
+        });
+    }
 
-        // Asignar escuchadores de eliminación en el Sidebar flotante
-        const botonesEliminarSidebar = sidebarItemsDiv.querySelectorAll('.btn-eliminar-sidebar');
-        botonesEliminarSidebar.forEach(btn => {
-            btn.addEventListener('click', () => {
-                const idx = parseInt(btn.getAttribute('data-index'));
-                carrito.splice(idx, 1);
-                actualizarInterfazCarrito();
-            });
-        });
+    // Función auxiliar para retornar valores directos en el submit
+    function obtenerTotalesActuales() {
+        const metodoPagoActivo = document.querySelector('input[name="metodo_pago"]:checked')?.value;
+        let descuento = 0;
+        if (metodoPagoActivo === 'efectivo' || metodoPagoActivo === 'transferencia') {
+            descuento = totalProductos * 0.05;
+        }
+        return {
+            descuento,
+            totalGeneral: (totalProductos - descuento) + costoEnvio
+        };
     }
 
     // 3. Procesar el envío del Formulario y Pasarela WhatsApp
@@ -276,19 +317,18 @@ document.addEventListener('DOMContentLoaded', () => {
 
             const tipoEntrega = document.querySelector('input[name="tipo_entrega"]:checked').value;
             const textoEntrega = tipoEntrega === 'envio' ? 'Envío a Domicilio' : 'Retiro por el Local';
-
-            // 🔥 NUEVO: Capturar el método de pago seleccionado
             const metodoPago = document.querySelector('input[name="metodo_pago"]:checked').value;
 
-            const totalGeneral = totalProductos + costoEnvio;
+            const { totalGeneral, descuento } = obtenerTotalesActuales();
 
             const datosPedido = {
                 cliente: { nombre, telefono: telefonoInput, direccion },
                 items: carrito,
                 tipoEntrega: tipoEntrega,
                 costoEnvio: costoEnvio,
+                descuento: descuento,
                 total: totalGeneral,
-                metodoPago: metodoPago // 🔥 Enviamos el método de pago a tu API
+                metodoPago: metodoPago
             };
 
             try {
@@ -327,10 +367,17 @@ document.addEventListener('DOMContentLoaded', () => {
                         mensajeWA += `• *Costo de Envío:* $${costoEnvio.toLocaleString('es-AR')}\n`;
                     }
 
-                    // 🔥 CONDICIONAL: Ajustamos el cierre del mensaje de WhatsApp según el pago
+                    if (descuento > 0) {
+                        mensajeWA += `• *Descuento (5% Off):* -$${descuento.toLocaleString('es-AR')}\n`;
+                    }
+
+                    // Ajustamos el cierre según el pago
                     if (metodoPago === 'efectivo') {
                         mensajeWA += `\n*Total a Pagar en Local:* $${totalGeneral.toLocaleString('es-AR')}\n\n`;
-                        mensajeWA += `¡Voy a abonar en efectivo al retirar!`;
+                        mensajeWA += `¡Abono en efectivo al retirar con el descuento aplicado!`;
+                    } else if (metodoPago === 'transferencia') {
+                        mensajeWA += `\n*Total a Transferir:* $${totalGeneral.toLocaleString('es-AR')}\n\n`;
+                        mensajeWA += `¡Solicito los datos bancarios para transferir con el descuento aplicado!`;
                     } else {
                         mensajeWA += `\n*Total General Pagado:* $${totalGeneral.toLocaleString('es-AR')}\n\n`;
                         mensajeWA += `¡Ya realicé el pago de forma online por Mercado Pago!`;
@@ -340,13 +387,9 @@ document.addEventListener('DOMContentLoaded', () => {
                     const numeroNegocio = "541125523930";
                     const urlWhatsApp = `https://wa.me/${numeroNegocio}?text=${mensajeCodificado}`;
 
-                    // 🔥 CONDICIONAL DE FLUJO: Mercado Pago vs Efectivo
-                    if (metodoPago === 'efectivo') {
-                        // --- FLUJO EFECTIVO ---
-                        // 1. Abrimos WhatsApp de una en otra pestaña
+                    if (metodoPago === 'efectivo' || metodoPago === 'transferencia') {
                         window.open(urlWhatsApp, '_blank');
 
-                        // 2. Limpiamos carrito e interfaz inmediatamente ya que no nos vamos de la página
                         carrito = [];
                         costoEnvio = 0;
                         actualizarInterfazCarrito();
@@ -354,13 +397,10 @@ document.addEventListener('DOMContentLoaded', () => {
                         const inputDireccion = document.getElementById('direccion');
                         if (inputDireccion) inputDireccion.required = false;
 
-                        alert('¡Pedido confirmado! Se abrió tu WhatsApp para enviar el detalle al local.');
+                        alert('¡Pedido verificado! Mandando el detalle con el descuento aplicado a WhatsApp.');
                     } else {
-                        // --- FLUJO MERCADO PAGO (Tu lógica original) ---
-                        // 1. Guardamos la URL en memoria para cuando vuelva del checkout
                         localStorage.setItem('pending_whatsapp_url', urlWhatsApp);
 
-                        // 2. Limpiamos variables locales
                         carrito = [];
                         costoEnvio = 0;
                         actualizarInterfazCarrito();
@@ -368,7 +408,6 @@ document.addEventListener('DOMContentLoaded', () => {
                         const inputDireccion = document.getElementById('direccion');
                         if (inputDireccion) inputDireccion.required = false;
 
-                        // 3. Redirigimos a la pasarela de pago
                         alert('¡Pedido guardado! Redirigiendo a Mercado Pago para completar tu pago...');
                         window.location.href = resultado.initPoint;
                     }
@@ -382,9 +421,42 @@ document.addEventListener('DOMContentLoaded', () => {
             }
         });
     }
-    /* ==========================================================================
-       LÓGICA DEL MENÚ HAMBURGUESA (UNIFICADA COMPLETA)
-       ========================================================================== */
+    const datosTransferencia = document.getElementById('datos-transferencia');
+
+    document.addEventListener('change', (e) => {
+        if (e.target && e.target.name === 'metodo_pago') {
+
+            if (datosTransferencia) {
+                datosTransferencia.style.display =
+                    e.target.value === 'transferencia'
+                        ? 'block'
+                        : 'none';
+            }
+
+            actualizarInterfazCarrito();
+        }
+    });
+    document.addEventListener('click', async (e) => {
+        if (e.target.classList.contains('btn-copiar')) {
+            const elemento = document.getElementById(e.target.dataset.copy);
+
+            try {
+                await navigator.clipboard.writeText(elemento.innerText);
+
+                const textoOriginal = e.target.innerText;
+                e.target.innerText = "✅";
+
+                setTimeout(() => {
+                    e.target.innerText = textoOriginal;
+                }, 1200);
+
+            } catch {
+                alert("No se pudo copiar el texto");
+            }
+        }
+    });
+
+    /* LÓGICA DEL MENÚ HAMBURGUESA */
     const menuToggle = document.getElementById("mobile-menu-btn");
     const navLinks = document.getElementById("nav-menu-links");
 
@@ -393,16 +465,14 @@ document.addEventListener('DOMContentLoaded', () => {
             navLinks.classList.toggle("active");
         });
 
-        const links = navLinks.querySelectorAll("a");
-        links.forEach(link => {
+        navLinks.querySelectorAll("a").forEach(link => {
             link.addEventListener("click", () => {
                 navLinks.classList.remove("active");
             });
         });
     }
-    /* ==========================================================================
-           LÓGICA DE APERTURA Y CIERRE DEL PANEL LATERAL (SIDEBAR)
-           ========================================================================== */
+
+    /* LÓGICA DE APERTURA Y CIERRE DEL PANEL LATERAL */
     const floatingBtn = document.getElementById('cart-floating-btn');
     const sidebarCart = document.getElementById('cart-sidebar');
     const closeSidebarBtn = document.getElementById('cart-sidebar-close');
@@ -426,7 +496,5 @@ document.addEventListener('DOMContentLoaded', () => {
     if (floatingBtn) floatingBtn.addEventListener('click', abrirSidebar);
     if (closeSidebarBtn) closeSidebarBtn.addEventListener('click', cerrarSidebar);
     if (cartOverlay) cartOverlay.addEventListener('click', cerrarSidebar);
-
-    // Al hacer clic en "Completar Datos", cerramos el panel para que el cliente pueda ver el formulario libremente
     if (checkoutLink) checkoutLink.addEventListener('click', cerrarSidebar);
 });
