@@ -10,8 +10,8 @@ app.use(cors());
 app.use(express.json()); // Para poder leer formato JSON en las peticiones
 
 // Conexión a la Base de Datos limpia (Para versiones modernas de Mongoose)
-mongoose.connect('mongodb://localhost:27017/saborysazon')
-.then(() => console.log('Conectado exitosamente a MongoDB'))
+mongoose.connect('mongodb+srv://yuriangelperezedu_db_user:vVs9x7ZbJ2znTaaQ@cluster0.qfrevux.mongodb.net/saborysazon?appName=Cluster0')
+.then(() => console.log('Conectado exitosamente a MongoDB Atlas'))
 .catch(err => console.error('Error al conectar a la base de datos:', err));
 
 // Esquema de Pedido para MongoDB
