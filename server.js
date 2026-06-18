@@ -14,18 +14,32 @@ mongoose.connect('mongodb+srv://yuriangelperezedu_db_user:vVs9x7ZbJ2znTaaQ@clust
 .then(() => console.log('Conectado exitosamente a MongoDB Atlas'))
 .catch(err => console.error('Error al conectar a la base de datos:', err));
 
-// Esquema de Pedido para MongoDB
+// --- ESQUEMA ACTUALIZADO Y ADAPTADO PARA LOS NUEVOS DATOS ---
 const PedidoSchema = new mongoose.Schema({
     cliente: {
         nombre: String,
         telefono: String,
-        direccion: String
+        direccion: { type: String, default: "" } // Opcional si eligen retirar en el local
     },
     items: [{
         producto: String,
         cantidad: Number,
-        precio: Number
+        precio: Number,
+        // Agregamos el soporte para el array de objetos con gustos desagregados
+        gustos: [{
+            componente: String, // Ej: "Arepa 1"
+            sabor: String       // Ej: "Carne"
+        }]
     }],
+    tipoEntrega: { 
+        type: String, 
+        enum: ['retiro', 'envio'], 
+        default: 'retiro' 
+    },
+    costoEnvio: { 
+        type: Number, 
+        default: 0 
+    },
     total: Number,
     estado: { type: String, default: 'Pendiente' },
     fecha: { type: Date, default: Date.now }
@@ -38,11 +52,11 @@ const Pedido = mongoose.model('Pedido', PedidoSchema);
 // 1. Recibir y guardar un nuevo pedido desde el Frontend
 app.post('/api/pedidos', async (req, res) => {
     try {
+        // Al expandir el PedidoSchema, req.body ahora guardará los gustos, tipoEntrega y costoEnvio automáticamente.
         const nuevoPedido = new Pedido(req.body);
         await nuevoPedido.save();
         res.status(201).json({ success: true, message: 'Pedido registrado con éxito', pedidoId: nuevoPedido._id });
     } catch (error) {
-        // Al agregar error.message vas a poder ver en la respuesta exactamente qué falló (ej: si faltó un campo obligatorio)
         res.status(500).json({ success: false, message: 'Error al procesar el pedido', error: error.message });
     }
 });
@@ -53,7 +67,7 @@ app.get('/api/pedidos', async (req, res) => {
         const listaPedidos = await Pedido.find().sort({ fecha: -1 });
         res.status(200).json(listaPedidos);
     } catch (error) {
-        res.status(500).json({ success: false, message: 'Error al obtener pedidos', error });
+        res.status(500).json({ success: false, message: 'Error al obtener pedidos', error: error.message });
     }
 });
 
