@@ -327,7 +327,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
                     // Cambiamos el mensaje para reflejar que ya se pagó electrónicamente
                     mensajeWA += `\n*Total General Pagado:* $${totalGeneral.toLocaleString('es-AR')}\n\n`;
-                    mensajeWA += `¡Ya realicé el pago de forma online por Mercado Pago! ✨`;
+                    mensajeWA += `¡Ya realicé el pago de forma online por Mercado Pago!`;
 
                     const mensajeCodificado = encodeURIComponent(mensajeWA);
                     const numeroNegocio = "541125523930";
