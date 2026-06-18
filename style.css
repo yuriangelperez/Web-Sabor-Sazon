@@ -122,6 +122,9 @@ body {
     display: none; 
     flex-direction: column;
     position: absolute;
+    justify-content: center;  /* Centra el contenido verticalmente si tiene altura */
+    align-items: center;      /* ¡ESTA ES LA CLAVE! Centra los textos horizontalmente */
+    text-align: center;
     top: 85px; /* Caída fija debajo del alto de la navbar */
     right: 5%; /* Alineado directamente abajo del botón */
     width: 260px;
