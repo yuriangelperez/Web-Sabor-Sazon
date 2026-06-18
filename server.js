@@ -6,7 +6,10 @@ const app = express();
 const PORT = process.env.PORT || 5000;
 
 // Middleware
-app.use(cors());
+app.use(cors({
+    origin: 'https://web-sabor-sazon.vercel.app', // Tu URL de Vercel
+    credentials: true
+}));
 app.use(express.json()); // Para poder leer formato JSON en las peticiones
 
 // Conexión a la Base de Datos limpia (Para versiones modernas de Mongoose)

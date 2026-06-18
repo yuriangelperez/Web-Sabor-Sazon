@@ -1,4 +1,12 @@
 document.addEventListener('DOMContentLoaded', () => {
+    // --- NUEVO: DESPERTADOR AUTOMÁTICO PARA RENDER ---
+    // Apenas carga la página en Vercel, le mandamos un saludo al backend en Render.
+    // Si estaba dormido, esto hace que empiece a arrancar mientras el cliente elige su comida.
+    fetch('https://sabor-y-sazon-backend.onrender.com/api/pedidos')
+        .then(() => console.log('Backend despertado exitosamente.'))
+        .catch(err => console.log('El backend está arrancando...'));
+    // -------------------------------------------------
+
     // Estado del carrito en memoria
     let carrito = [];
     let totalProductos = 0;
