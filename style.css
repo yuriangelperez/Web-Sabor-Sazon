@@ -172,7 +172,7 @@ body {
 
 .btn-secondary {
     background-color: #25d366; 
-    color: #fff;
+    color: #000000;
 }
 
 .btn-secondary:hover {
@@ -391,6 +391,81 @@ body {
     background-color: #f7d070;
     transform: translateY(-2px);
     box-shadow: 0 8px 20px rgba(var(--accent-gold-rgb), 0.2);
+}
+
+/* ==========================================================================
+   SECCIÓN DE PERSONALIZACIÓN DE COMBOS (SELECTS PREMIUM)
+   ========================================================================== */
+.item-customization {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    margin: 16px 0;
+    padding: 12px;
+    background-color: rgba(255, 255, 255, 0.03);
+    border-radius: 8px;
+    border: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+.select-group {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    text-align: left;
+}
+
+.select-group label {
+    font-size: 13px;
+    font-weight: 600;
+    color: #a1a1aa; /* Gris claro sutil */
+    letter-spacing: 0.5px;
+}
+
+.custom-select {
+    width: 100%;
+    padding: 10px 14px;
+    font-size: 14px;
+    font-weight: 500;
+    color: #ffffff;
+    background-color: #14181e; /* Fondo oscuro integrado */
+    border: 1px solid rgba(255, 181, 78, 0.464);
+    border-radius: 6px;
+    cursor: pointer;
+    outline: none;
+    transition: border-color 0.2s ease, box-shadow 0.2s ease;
+    
+    /* Reemplazo nativo de flechita para mejor control visual */
+    appearance: none;
+    -webkit-appearance: none;
+    -moz-appearance: none;
+    background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='24' height='24' viewBox='0 0 24 24' fill='none' stroke='%23e2e8f0' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'><polyline points='6 9 12 15 18 9'></polyline></svg>");
+    background-repeat: no-repeat;
+    background-position: right 12px center;
+    background-size: 16px;
+}
+
+/* Efecto focus al hacer clic en el desplegable */
+.custom-select:focus {
+    border-color: #ffc107; /* Color dorado de tus botones/acentos */
+    box-shadow: 0 0 0 2px rgba(255, 193, 7, 0.2);
+}
+
+/* Estilo para las opciones internas en navegadores */
+.custom-select option {
+    background-color: #14181e;
+    color: #ffffff;
+    padding: 10px;
+}
+
+/* Ajuste responsivo para celulares: si hay espacio, se ponen a la par */
+@media (min-width: 480px) {
+    .item-customization {
+        flex-direction: row;
+        justify-content: space-between;
+    }
+    .select-group {
+        flex: 1;
+    }
 }
 
 /* ==========================================================================
