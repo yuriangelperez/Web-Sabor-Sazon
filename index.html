@@ -609,137 +609,157 @@
     </section>
 
     <section id="checkout" class="checkout-section">
-    <div id="pedido" class="checkout-container">
-        <div class="checkout-card">
-            
-            <!-- FORMULARIO PRINCIPAL: Ahora envuelve todo el layout para que el botón derecho envíe los datos correctamente -->
-            <form id="form-pedido">
-                
-                <!-- 🔥 CONTENEDOR FLEX/GRID DE DOS COLUMNAS -->
-                <div class="checkout-layout">
-                    
-                    <!-- ⬅️ COLUMNA IZQUIERDA: Resumen, Totales y Datos del Cliente -->
-                    <div class="checkout-col-izquierda">
-                        <h3>Tu Pedido</h3>
-                        <div id="carrito-items" style="color: var(--text-secondary); margin-bottom: 15px; font-size: 14px;">
-                            <p>El carrito está vacío. ¡Agrega tus arepas o combos favoritos!</p>
-                        </div>
-                        <div style="display: flex; justify-content: space-between; margin-bottom: 25px; border-top: 1px dashed rgba(255,255,255,0.1); padding-top: 15px;">
-                            <strong>Total a Pagar:</strong>
-                            <span id="carrito-total" style="color: var(--accent-gold); font-weight: bold; font-size: 18px;">$0</span>
-                        </div>
+        <div id="pedido" class="checkout-container">
+            <div class="checkout-card">
 
-                        <h3>Datos de Entrega</h3>
-                        <p style="margin-bottom: 15px; color: var(--text-secondary); font-size: 14px;">
-                            Completá tus datos para coordinar el pago y envío por WhatsApp.
-                        </p>
-                        
-                        <div class="form-group">
-                            <label for="nombre">Nombre Completo</label>
-                            <input type="text" id="nombre" placeholder="Ej. Juan Perez" required>
-                        </div>
-                        
-                        <div class="form-group">
-                            <label for="telefono">Teléfono de Contacto</label>
-                            <input type="text" id="telefono" placeholder="Ej. 1125523930" required>
-                        </div>
+                <!-- FORMULARIO PRINCIPAL: Ahora envuelve todo el layout para que el botón derecho envíe los datos correctamente -->
+                <form id="form-pedido">
 
-                        <div class="form-group">
-                            <label for="direccion">Dirección de Entrega</label>
-                            <input type="text" id="direccion" placeholder="No es requerida para retirar">
-                        </div>
+                    <!-- 🔥 CONTENEDOR FLEX/GRID DE DOS COLUMNAS -->
+                    <div class="checkout-layout">
 
-                        <!-- Bloque oculto de transferencia (se renderizará de manera prolija acá abajo si se selecciona) -->
-                        <div id="datos-transferencia" style="display:none; margin-top:15px; width: 100%;">
-                            <div style="background: rgba(245,196,83,.08); border: 1px solid rgba(255, 201, 76, 0.5); padding: 16px; border-radius: 8px; color: white; line-height: 1.8; width: 100%;">
-                                <strong style="font-size:16px;">Datos para transferir</strong><br><br>
-                                <div>
-                                    Alias: <strong id="alias-transferencia">yuri.1509</strong>
-                                    <button type="button" class="btn-copiar" data-copy="alias-transferencia">📋</button>
-                                </div>
-                                <div>
-                                    CVU: <strong id="cvu-transferencia">0000003100039251171232</strong>
-                                    <button type="button" class="btn-copiar" data-copy="cvu-transferencia">📋</button>
-                                </div>
-                                <div>
-                                    Titular: <strong id="titular-transferencia">Yuriangel Pérez</strong>
-                                    <button type="button" class="btn-copiar" data-copy="titular-transferencia">📋</button>
-                                </div>
+                        <!-- ⬅️ COLUMNA IZQUIERDA: Resumen, Totales y Datos del Cliente -->
+                        <div class="checkout-col-izquierda">
+                            <h3>Tu Pedido</h3>
+                            <div id="carrito-items"
+                                style="color: var(--text-secondary); margin-bottom: 15px; font-size: 14px;">
+                                <p>El carrito está vacío. ¡Agrega tus arepas o combos favoritos!</p>
                             </div>
-                        </div>
-                    </div>
-
-                    <!-- ➡️ COLUMNA DERECHA: Opciones de selección y botón final -->
-                    <div class="checkout-col-derecha">
-                        
-                        <!-- Bloque Método de Entrega -->
-                        <div class="form-group">
-                            <label style="color: #ffffff; font-weight: 500; display: block; margin-bottom: 10px; font-size: 15px;">
-                                Método de Entrega:
-                            </label>
-                            <div class="contenedor-entrega">
-                                <label class="tarjeta-opcion">
-                                    <input type="radio" name="tipo_entrega" value="retiro" checked>
-                                    <div class="contenido-tarjeta">
-                                        <span class="icono">🏃‍♂️</span>
-                                        <span class="titulo-opcion">Retiro por el local</span>
-                                        <span class="precio-opcion">$0</span>
-                                    </div>
-                                </label>
-                                <label class="tarjeta-opcion">
-                                    <input type="radio" name="tipo_entrega" value="envio">
-                                    <div class="contenido-tarjeta">
-                                        <span class="icono">🛵</span>
-                                        <span class="titulo-opcion">Envío a domicilio</span>
-                                        <span class="precio-opcion">+$8.000</span>
-                                    </div>
-                                </label>
+                            <div
+                                style="display: flex; justify-content: space-between; margin-bottom: 25px; border-top: 1px dashed rgba(255,255,255,0.1); padding-top: 15px;">
+                                <strong>Total a Pagar:</strong>
+                                <span id="carrito-total"
+                                    style="color: var(--accent-gold); font-weight: bold; font-size: 18px;">$0</span>
                             </div>
-                        </div>
 
-                        <!-- Bloque Método de Pago -->
-                        <div class="form-group" id="bloque-pago">
-                            <label style="color: #ffffff; font-weight: 500; display: block; margin-bottom: 5px; font-size: 15px;">
-                                Método de Pago:
-                            </label>
-                            <p style="color: #fabb3a; font-size: 13px; margin-top: 0; margin-bottom: 12px; font-weight: 500;">
-                                🔥 ¡5% de descuento abonando en Efectivo o Transferencia!
+                            <h3>Datos de Entrega</h3>
+                            <p style="margin-bottom: 15px; color: var(--text-secondary); font-size: 14px;">
+                                Completá tus datos para coordinar el pago y envío por WhatsApp.
                             </p>
-                            <div class="contenedor-entrega">
-                                <label class="tarjeta-opcion">
-                                    <input type="radio" name="metodo_pago" value="mercadopago" checked>
-                                    <div class="contenido-tarjeta">
-                                        <span class="icono">💳</span>
-                                        <span class="titulo-opcion">Mercado Pago</span>
+
+                            <div class="form-group">
+                                <label for="nombre">Nombre Completo</label>
+                                <input type="text" id="nombre" placeholder="Ej. Juan Perez" required>
+                            </div>
+
+                            <div class="form-group">
+                                <label for="telefono">Teléfono de Contacto</label>
+                                <input type="text" id="telefono" placeholder="Ej. 1125523930" required>
+                            </div>
+
+                            <div class="form-group" id="contenedor-zona">
+                                <label for="zona-entrega">Zona de Entrega</label>
+                                <select id="zona-entrega" class="custom-select" required>
+                                    <option value="" disabled selected>-- Seleccioná tu localidad --</option>
+                                    <option value="5000">Manuel Alberti (+$5.000)</option>
+                                    <option value="6000">Del Viso (+$6.000)</option>
+                                    <option value="8000">Tortuguitas (+$8.000)</option>
+                                    <option value="no-delivery">Otra zona (No disponible para delivery)</option>
+                                </select>
+                            </div>
+
+                            <div class="form-group" id="contenedor-calle" style="display: none;">
+                                <label for="direccion-calle">Calle y Altura (Ej: Irigoyen 1234)</label>
+                                <input type="text" id="direccion-calle" placeholder="Nombre de calle y número">
+                            </div>
+
+                            <!-- Bloque oculto de transferencia (se renderizará de manera prolija acá abajo si se selecciona) -->
+                            <div id="datos-transferencia" style="display:none; margin-top:15px; width: 100%;">
+                                <div
+                                    style="background: rgba(245,196,83,.08); border: 1px solid rgba(255, 201, 76, 0.5); padding: 16px; border-radius: 8px; color: white; line-height: 1.8; width: 100%;">
+                                    <strong style="font-size:16px;">Datos para transferir</strong><br><br>
+                                    <div>
+                                        Alias: <strong id="alias-transferencia">yuri.1509</strong>
+                                        <button type="button" class="btn-copiar"
+                                            data-copy="alias-transferencia">📋</button>
                                     </div>
-                                </label>
-                                <label class="tarjeta-opcion">
-                                    <input type="radio" name="metodo_pago" value="transferencia">
-                                    <div class="contenido-tarjeta">
-                                        <span class="icono">🏛️</span>
-                                        <span class="titulo-opcion">Transferencia</span>
+                                    <div>
+                                        CVU: <strong id="cvu-transferencia">0000003100039251171232</strong>
+                                        <button type="button" class="btn-copiar"
+                                            data-copy="cvu-transferencia">📋</button>
                                     </div>
-                                </label>
-                                <label class="tarjeta-opcion" id="tarjeta-efectivo">
-                                    <input type="radio" name="metodo_pago" value="efectivo">
-                                    <div class="contenido-tarjeta">
-                                        <span class="icono">💵</span>
-                                        <span class="titulo-opcion">Efectivo</span>
+                                    <div>
+                                        Titular: <strong id="titular-transferencia">Yuriangel Pérez</strong>
+                                        <button type="button" class="btn-copiar"
+                                            data-copy="titular-transferencia">📋</button>
                                     </div>
-                                </label>
+                                </div>
                             </div>
                         </div>
 
-                        <!-- Botón de acción principal al fondo de las opciones -->
-                        <button type="submit" class="btn-submit">Confirmar y Pagar</button>
-                    </div>
+                        <!-- ➡️ COLUMNA DERECHA: Opciones de selección y botón final -->
+                        <div class="checkout-col-derecha">
 
-                </div> <!-- Fin .checkout-layout -->
-            </form>
+                            <!-- Bloque Método de Entrega -->
+                            <div class="form-group">
+                                <label
+                                    style="color: #ffffff; font-weight: 500; display: block; margin-bottom: 10px; font-size: 15px;">
+                                    Método de Entrega:
+                                </label>
+                                <div class="contenedor-entrega">
+                                    <label class="tarjeta-opcion">
+                                        <input type="radio" name="tipo_entrega" value="retiro" checked>
+                                        <div class="contenido-tarjeta">
+                                            <span class="icono">🏃‍♂️</span>
+                                            <span class="titulo-opcion">Retiro por el local</span>
+                                            <span class="precio-opcion">$0</span>
+                                        </div>
+                                    </label>
+                                    <label class="tarjeta-opcion">
+                                        <input type="radio" name="tipo_entrega" value="envio">
+                                        <div class="contenido-tarjeta">
+                                            <span class="icono">🛵</span>
+                                            <span class="titulo-opcion">Envío a domicilio</span>
+                                        </div>
+                                    </label>
+                                </div>
+                            </div>
 
+                            <!-- Bloque Método de Pago -->
+                            <div class="form-group" id="bloque-pago">
+                                <label
+                                    style="color: #ffffff; font-weight: 500; display: block; margin-bottom: 5px; font-size: 15px;">
+                                    Método de Pago:
+                                </label>
+                                <p
+                                    style="color: #fabb3a; font-size: 13px; margin-top: 0; margin-bottom: 12px; font-weight: 500;">
+                                    🔥 ¡5% de descuento abonando en Efectivo o Transferencia!
+                                </p>
+                                <div class="contenedor-entrega">
+                                    <label class="tarjeta-opcion">
+                                        <input type="radio" name="metodo_pago" value="mercadopago" checked>
+                                        <div class="contenido-tarjeta">
+                                            <span class="icono">💳</span>
+                                            <span class="titulo-opcion">Mercado Pago</span>
+                                        </div>
+                                    </label>
+                                    <label class="tarjeta-opcion">
+                                        <input type="radio" name="metodo_pago" value="transferencia">
+                                        <div class="contenido-tarjeta">
+                                            <span class="icono">🏛️</span>
+                                            <span class="titulo-opcion">Transferencia</span>
+                                        </div>
+                                    </label>
+                                    <label class="tarjeta-opcion" id="tarjeta-efectivo">
+                                        <input type="radio" name="metodo_pago" value="efectivo">
+                                        <div class="contenido-tarjeta">
+                                            <span class="icono">💵</span>
+                                            <span class="titulo-opcion">Efectivo</span>
+                                        </div>
+                                    </label>
+                                </div>
+                            </div>
+
+                            <!-- Botón de acción principal al fondo de las opciones -->
+                            <button type="submit" class="btn-submit">Confirmar y Pagar</button>
+                        </div>
+
+                    </div> <!-- Fin .checkout-layout -->
+                </form>
+
+            </div>
         </div>
-    </div>
-</section>
+    </section>
 
     <section class="menu-section">
         <div class="nosotros-content" style="text-align: center; padding: 40px 20px;">

@@ -6,14 +6,13 @@ document.addEventListener('DOMContentLoaded', () => {
     if (status === 'success') {
         const urlWA = localStorage.getItem('pending_whatsapp_url');
         if (urlWA) {
-            localStorage.removeItem('pending_whatsapp_url'); // Limpiamos la memoria interna
+            localStorage.removeItem('pending_whatsapp_url');
             alert('¡Pago aprobado con éxito! Redirigiendo a WhatsApp para avisar al local...');
-            window.open(urlWA, '_self'); // Abre tu mensaje formateado de WhatsApp en la misma pestaña
+            window.open(urlWA, '_self');
         }
     } else if (status === 'failure') {
         alert('El pago no pudo procesarse o fue cancelado. Por favor, intenta de nuevo o comunícate con nosotros.');
     }
-    // -----------------------------------------------------
 
     // Estado del carrito en memoria
     let carrito = [];
@@ -24,19 +23,17 @@ document.addEventListener('DOMContentLoaded', () => {
     const carritoTotalSpan = document.getElementById('carrito-total');
     const formularioPedido = document.getElementById('form-pedido');
 
-    // 1. Capturar clics en los botones de "Agregar"
+    // 1. MANEJADOR DE CLICS (Agregar productos y soporte para botones visuales de entrega/pago)
     document.addEventListener('click', (e) => {
         if (e.target && e.target.classList.contains('btn-agregar')) {
             const producto = e.target.getAttribute('data-producto');
             const precio = parseInt(e.target.getAttribute('data-precio'));
 
-            // --- DETECCION DE GUSTOS DETALLADOS ---
             const cardBody = e.target.closest('.card-body') || e.target.closest('.menu-card');
             let gustosElegidos = [];
 
             if (cardBody) {
                 const selectores = cardBody.querySelectorAll('.custom-select');
-
                 selectores.forEach((select, index) => {
                     let etiquetaItem = "";
                     const labelPrevio = select.previousElementSibling;
@@ -53,15 +50,10 @@ document.addEventListener('DOMContentLoaded', () => {
                             etiquetaItem = `Ítem ${index + 1}`;
                         }
                     }
-
-                    gustosElegidos.push({
-                        componente: etiquetaItem,
-                        sabor: select.value
-                    });
+                    gustosElegidos.push({ componente: etiquetaItem, sabor: select.value });
                 });
             }
 
-            // --- LOGICA DE AGREGAR AL CARRITO ---
             const itemExistente = carrito.find(item =>
                 item.producto === producto &&
                 JSON.stringify(item.gustos) === JSON.stringify(gustosElegidos)
@@ -70,59 +62,131 @@ document.addEventListener('DOMContentLoaded', () => {
             if (itemExistente) {
                 itemExistente.cantidad += 1;
             } else {
-                carrito.push({
-                    producto: producto,
-                    cantidad: 1,
-                    precio: precio,
-                    gustos: gustosElegidos
-                });
+                carrito.push({ producto, cantidad: 1, precio, gustos: gustosElegidos });
             }
-
             actualizarInterfazCarrito();
+            return;
+        }
+
+        // Soporte para clics en cajas de tarjetas personalizadas (Método de Entrega / Pago)
+        const tarjetaEntrega = e.target.closest('.metodo-entrega-card') || e.target.closest('[data-entrega]');
+        if (tarjetaEntrega) {
+            const radio = tarjetaEntrega.querySelector('input[name="tipo_entrega"]');
+            if (radio) {
+                radio.checked = true;
+                radio.dispatchEvent(new Event('change', { bubbles: true }));
+            }
+        }
+
+        const tarjetaPago = e.target.closest('.metodo-pago-card') || e.target.closest('[data-pago]');
+        if (tarjetaPago) {
+            const radio = tarjetaPago.querySelector('input[name="metodo_pago"]');
+            if (radio) {
+                radio.checked = true;
+                radio.dispatchEvent(new Event('change', { bubbles: true }));
+            }
         }
     });
 
-    // --- ESCUCHAR CAMBIOS EN EL TIPO DE ENTREGA Y MÉTODO DE PAGO ---
+    // 2. ESCUCHAR CAMBIOS EN INPUTS SELECTS Y RADIOS
     document.addEventListener('change', (e) => {
+        const inputZona = document.getElementById('zona-entrega'); // Corregido el ID según tu HTML
+        const contenedorCalle = document.getElementById('contenedor-calle');
+        const inputCalle = document.getElementById('direccion-calle');
+        const tarjetaEfectivo = document.getElementById('tarjeta-efectivo');
+        const inputMercadoPago = document.querySelector('input[name="metodo_pago"][value="mercadopago"]');
+        const metodoPagoActivo = document.querySelector('input[name="metodo_pago"]:checked')?.value;
+        const botonEnviarPedido = formularioPedido ? formularioPedido.querySelector('button[type="submit"]') : null;
+        const datosTransferencia = document.getElementById('datos-transferencia');
+
+        // A. Si cambia entre Envío o Retiro
         if (e.target && e.target.name === 'tipo_entrega') {
-            const inputDireccion = document.getElementById('direccion');
-            const tarjetaEfectivo = document.getElementById('tarjeta-efectivo');
-            const inputMercadoPago = document.querySelector('input[name="metodo_pago"][value="mercadopago"]');
-            const metodoPagoActivo = document.querySelector('input[name="metodo_pago"]:checked')?.value;
+            const contenedorZona = document.getElementById('contenedor-zona'); // <--- NUEVO
 
             if (e.target.value === 'envio') {
-                costoEnvio = 8000;
-                if (inputDireccion) {
+                costoEnvio = 0; // Empieza en 0 hasta que seleccione la localidad real
+                if (contenedorZona) contenedorZona.style.display = 'block'; // <--- MUESTRA ZONA
+                if (inputDireccion) { // Nota: si inputDireccion ahora es zona-entrega, adaptalo abajo
                     inputDireccion.required = true;
-                    inputDireccion.placeholder = "Ej. San Ignacio 663";
-                    inputDireccion.parentElement.style.opacity = "1";
+                    inputDireccion.value = "";
                 }
-
                 if (tarjetaEfectivo) tarjetaEfectivo.style.display = 'none';
-
                 if (metodoPagoActivo === 'efectivo' && inputMercadoPago) {
                     inputMercadoPago.checked = true;
                 }
             } else {
+                // Si es Retiro, limpiamos el costo de envío y OCULTAMOS ambos contenedores
                 costoEnvio = 0;
-                if (inputDireccion) {
-                    inputDireccion.required = false;
-                    inputDireccion.placeholder = "No es requerida para retirar";
-                    inputDireccion.value = "";
+                if (contenedorZona) contenedorZona.style.display = 'none'; // <--- OCULTA ZONA
+                if (contenedorCalle) contenedorCalle.style.display = 'none'; // <--- OCULTA CALLE
+
+                // Reseteamos los valores y quitamos el 'required' del selector modificado
+                const selectorZona = document.getElementById('zona-entrega');
+                if (selectorZona) {
+                    selectorZona.required = false;
+                    selectorZona.value = "";
                 }
-
+                if (inputCalle) {
+                    inputCalle.required = false;
+                    inputCalle.value = "";
+                }
                 if (tarjetaEfectivo) tarjetaEfectivo.style.display = 'flex';
-            }
 
+                if (botonEnviarPedido) {
+                    botonEnviarPedido.disabled = false;
+                    botonEnviarPedido.innerText = "Finalizar Pedido";
+                    botonEnviarPedido.style.backgroundColor = "";
+                }
+            }
             actualizarInterfazCarrito();
         }
 
+        // B. Si cambia la Zona seleccionada en el menú desplegable (ACTUALIZADO ID)
+        if (e.target && e.target.id === 'zona-entrega') { // <--- CAMBIADO A TU NUEVO ID
+            const valorSeleccionado = e.target.value;
+
+            if (valorSeleccionado === "no-delivery") {
+                alert("⚠️ Por el momento Sabor & Sazón no realiza envíos fuera de Manuel Alberti, Del Viso o Tortuguitas. Podés cambiar el método a 'Retiro por el local'.");
+                costoEnvio = 0;
+                if (contenedorCalle) contenedorCalle.style.display = 'none';
+                if (inputCalle) {
+                    inputCalle.required = false;
+                    inputCalle.value = "";
+                }
+
+                if (botonEnviarPedido) {
+                    botonEnviarPedido.disabled = true;
+                    botonEnviarPedido.innerText = "Zona no disponible";
+                    botonEnviarPedido.style.backgroundColor = "#555";
+                }
+            } else if (valorSeleccionado !== "") {
+                if (botonEnviarPedido) {
+                    botonEnviarPedido.disabled = false;
+                    botonEnviarPedido.innerText = "Finalizar Pedido";
+                    botonEnviarPedido.style.backgroundColor = "";
+                }
+
+                // Asignamos el costo real de la zona seleccionada
+                costoEnvio = parseInt(valorSeleccionado) || 0;
+
+                if (contenedorCalle) contenedorCalle.style.display = 'block';
+                if (inputCalle) inputCalle.required = true;
+            } else {
+                costoEnvio = 0;
+            }
+            actualizarInterfazCarrito();
+        }
+
+        // C. Cambio del método de pago
         if (e.target && e.target.name === 'metodo_pago') {
+            if (datosTransferencia) {
+                datosTransferencia.style.display = e.target.value === 'transferencia' ? 'block' : 'none';
+            }
             actualizarInterfazCarrito();
         }
     });
 
-    // --- 2. FUNCIÓN ÚNICA PARA REDIBUJAR EL CARRITO Y CALCULAR VALORES (UNIFICADA) ---
+    // 3. ACTUALIZAR INTERFAZ Y REDIBUJAR PRECIOS
     function actualizarInterfazCarrito() {
         const sidebarItemsDiv = document.getElementById('cart-sidebar-items');
         const sidebarTotalSpan = document.getElementById('cart-sidebar-total');
@@ -130,18 +194,14 @@ document.addEventListener('DOMContentLoaded', () => {
 
         let totalUnidades = 0;
         carrito.forEach(item => totalUnidades += item.cantidad);
-        if (floatingCountSpan) {
-            floatingCountSpan.innerText = totalUnidades;
-        }
+        if (floatingCountSpan) floatingCountSpan.innerText = totalUnidades;
 
         if (carrito.length === 0) {
             const mensajeVacio = '<p class="cart-empty-msg">El carrito está vacío. ¡Agrega tus arepas o combos favoritos!</p>';
             if (carritoItemsDiv) carritoItemsDiv.innerHTML = mensajeVacio;
             if (sidebarItemsDiv) sidebarItemsDiv.innerHTML = mensajeVacio;
-
             if (carritoTotalSpan) carritoTotalSpan.innerText = '$0';
             if (sidebarTotalSpan) sidebarTotalSpan.innerText = '$0';
-
             totalProductos = 0;
             return;
         }
@@ -154,53 +214,31 @@ document.addEventListener('DOMContentLoaded', () => {
             const subtotal = item.precio * item.cantidad;
             totalProductos += subtotal;
 
-            // Nodo para Checkout Tradicional
             const itemDivCheckout = document.createElement('div');
             itemDivCheckout.style.marginBottom = '14px';
-
-            const filaPrincipalCheckout = document.createElement('div');
-            filaPrincipalCheckout.style.display = 'flex';
-            filaPrincipalCheckout.style.justifyContent = 'space-between';
-            filaPrincipalCheckout.style.alignItems = 'center';
-            filaPrincipalCheckout.innerHTML = `
-                <span style="color: #ffffff; font-weight: 500;">${item.cantidad}x ${item.producto}</span>
-                <div style="display: flex; align-items: center; gap: 10px;">
-                    <span style="color: #ffffff; font-weight: 600;">$${subtotal.toLocaleString('es-AR')}</span>
-                    <button
-    type="button"
-    class="btn-eliminar"
-    data-index="${index}"
-    style="background: none; border: none; color: #ef4444; cursor: pointer; font-size: 13px; padding: 0 4px;">
-    ✕
-</button>
+            itemDivCheckout.innerHTML = `
+                <div style="display: flex; justify-content: space-between; align-items: center;">
+                    <span style="color: #ffffff; font-weight: 500;">${item.cantidad}x ${item.producto}</span>
+                    <div style="display: flex; align-items: center; gap: 10px;">
+                        <span style="color: #ffffff; font-weight: 600;">$${subtotal.toLocaleString('es-AR')}</span>
+                        <button type="button" class="btn-eliminar" data-index="${index}" style="background: none; border: none; color: #ef4444; cursor: pointer;">✕</button>
+                    </div>
                 </div>
             `;
-            itemDivCheckout.appendChild(filaPrincipalCheckout);
 
-            // Nodo para Sidebar Flotante
             const itemDivSidebar = document.createElement('div');
             itemDivSidebar.style.marginBottom = '14px';
             itemDivSidebar.style.borderBottom = '1px solid rgba(255,255,255,0.03)';
             itemDivSidebar.style.paddingBottom = '10px';
-
-            const filaPrincipalSidebar = document.createElement('div');
-            filaPrincipalSidebar.style.display = 'flex';
-            filaPrincipalSidebar.style.justifyContent = 'space-between';
-            filaPrincipalSidebar.style.alignItems = 'center';
-            filaPrincipalSidebar.innerHTML = `
-                <span style="color: #ffffff; font-weight: 500; font-size: 14px;">${item.cantidad}x ${item.producto}</span>
-                <div style="display: flex; align-items: center; gap: 10px;">
-                    <span style="color: var(--accent-gold); font-weight: 600; font-size: 14px;">$${subtotal.toLocaleString('es-AR')}</span>
-<button
-    type="button"
-    class="btn-eliminar-sidebar"
-    data-index="${index}"
-    style="background: none; border: none; color: #ef4444; cursor: pointer; font-size: 13px; padding: 0 4px;">
-    ✕
-</button>
+            itemDivSidebar.innerHTML = `
+                <div style="display: flex; justify-content: space-between; align-items: center;">
+                    <span style="color: #ffffff; font-weight: 500; font-size: 14px;">${item.cantidad}x ${item.producto}</span>
+                    <div style="display: flex; align-items: center; gap: 10px;">
+                        <span style="color: var(--accent-gold); font-weight: 600; font-size: 14px;">$${subtotal.toLocaleString('es-AR')}</span>
+                        <button type="button" class="btn-eliminar-sidebar" data-index="${index}" style="background: none; border: none; color: #ef4444; cursor: pointer;">✕</button>
                     </div>
+                </div>
             `;
-            itemDivSidebar.appendChild(filaPrincipalSidebar);
 
             if (item.gustos && item.gustos.length > 0) {
                 const generarHTMLGustos = () => {
@@ -209,12 +247,9 @@ document.addEventListener('DOMContentLoaded', () => {
                     contenedor.style.color = '#a1a1aa';
                     contenedor.style.marginTop = '4px';
                     contenedor.style.paddingLeft = '15px';
-                    contenedor.style.lineHeight = '1.4';
-                    const lineasGustos = item.gustos.map(g => `<span style="color: #e4e4e7;">${g.componente}:</span> ${g.sabor}`);
-                    contenedor.innerHTML = lineasGustos.join('<br>');
+                    contenedor.innerHTML = item.gustos.map(g => `<span style="color: #e4e4e7;">${g.componente}:</span> ${g.sabor}`).join('<br>');
                     return contenedor;
                 };
-
                 itemDivCheckout.appendChild(generarHTMLGustos());
                 itemDivSidebar.appendChild(generarHTMLGustos());
             }
@@ -224,84 +259,54 @@ document.addEventListener('DOMContentLoaded', () => {
         });
 
         if (costoEnvio > 0) {
-            const generarHTMLEnvio = () => {
-                const divEnvio = document.createElement('div');
-                divEnvio.style.display = 'flex';
-                divEnvio.style.justifyContent = 'space-between';
-                divEnvio.style.fontSize = '13px';
-                divEnvio.style.color = '#a1a1aa';
-                divEnvio.style.marginTop = '8px';
-                divEnvio.style.borderTop = '1px dashed #3f3f46';
-                divEnvio.style.paddingTop = '8px';
-                divEnvio.innerHTML = `
-                    <span>🛵 Costo de Envío</span>
-                    <span>$${costoEnvio.toLocaleString('es-AR')}</span>
-                `;
-                return divEnvio;
-            };
-            if (carritoItemsDiv) carritoItemsDiv.appendChild(generarHTMLEnvio());
-            if (sidebarItemsDiv) sidebarItemsDiv.appendChild(generarHTMLEnvio());
+            const divEnvio = document.createElement('div');
+            divEnvio.style.display = 'flex';
+            divEnvio.style.justifyContent = 'space-between';
+            divEnvio.style.fontSize = '13px';
+            divEnvio.style.color = '#a1a1aa';
+            divEnvio.style.marginTop = '8px';
+            divEnvio.innerHTML = `<span>🛵 Costo de Envío</span><span>$${costoEnvio.toLocaleString('es-AR')}</span>`;
+            if (carritoItemsDiv) carritoItemsDiv.appendChild(divEnvio.cloneNode(true));
+            if (sidebarItemsDiv) sidebarItemsDiv.appendChild(divEnvio);
         }
 
-        // 🔥 OBTENER EL MÉTODO DE PAGO Y CALCULAR EL DESCUENTO AUTOMÁTICO
         const metodoPagoActivo = document.querySelector('input[name="metodo_pago"]:checked')?.value;
-        let descuento = 0;
-        if (metodoPagoActivo === 'efectivo' || metodoPagoActivo === 'transferencia') {
-            descuento = totalProductos * 0.05;
-        }
+        let descuento = (metodoPagoActivo === 'efectivo' || metodoPagoActivo === 'transferencia') ? totalProductos * 0.05 : 0;
 
-        // Añadimos fila visual de descuento a las listas si corresponde
         if (descuento > 0) {
-            const generarHTMLDescuento = () => {
-                const divDesc = document.createElement('div');
-                divDesc.style.display = 'flex';
-                divDesc.style.justifyContent = 'space-between';
-                divDesc.style.fontSize = '13px';
-                divDesc.style.color = '#fabb3a';
-                divDesc.style.marginTop = '4px';
-                divDesc.innerHTML = `
-                    <span>🔥 Descuento 5% OFF</span>
-                    <span>-$${descuento.toLocaleString('es-AR')}</span>
-                `;
-                return divDesc;
-            };
-            if (carritoItemsDiv) carritoItemsDiv.appendChild(generarHTMLDescuento());
-            if (sidebarItemsDiv) sidebarItemsDiv.appendChild(generarHTMLDescuento());
+            const divDesc = document.createElement('div');
+            divDesc.style.display = 'flex';
+            divDesc.style.justifyContent = 'space-between';
+            divDesc.style.color = '#fabb3a';
+            divDesc.style.fontSize = '13px';
+            divDesc.innerHTML = `<span>🔥 Descuento 5% OFF</span><span>-$${descuento.toLocaleString('es-AR')}</span>`;
+            if (carritoItemsDiv) carritoItemsDiv.appendChild(divDesc.cloneNode(true));
+            if (sidebarItemsDiv) sidebarItemsDiv.appendChild(divDesc);
         }
 
         const totalGeneral = (totalProductos - descuento) + costoEnvio;
         if (carritoTotalSpan) carritoTotalSpan.innerText = `$${totalGeneral.toLocaleString('es-AR')}`;
         if (sidebarTotalSpan) sidebarTotalSpan.innerText = `$${totalGeneral.toLocaleString('es-AR')}`;
 
-        // Escuchadores de eliminación
-        carritoItemsDiv.querySelectorAll('.btn-eliminar').forEach(btn => {
-            btn.addEventListener('click', () => {
-                carrito.splice(parseInt(btn.getAttribute('data-index')), 1);
-                actualizarInterfazCarrito();
+        if (carritoItemsDiv) {
+            carritoItemsDiv.querySelectorAll('.btn-eliminar').forEach(btn => {
+                btn.onclick = () => { carrito.splice(parseInt(btn.dataset.index), 1); actualizarInterfazCarrito(); };
             });
-        });
-        sidebarItemsDiv.querySelectorAll('.btn-eliminar-sidebar').forEach(btn => {
-            btn.addEventListener('click', () => {
-                carrito.splice(parseInt(btn.getAttribute('data-index')), 1);
-                actualizarInterfazCarrito();
+        }
+        if (sidebarItemsDiv) {
+            sidebarItemsDiv.querySelectorAll('.btn-eliminar-sidebar').forEach(btn => {
+                btn.onclick = () => { carrito.splice(parseInt(btn.dataset.index), 1); actualizarInterfazCarrito(); };
             });
-        });
+        }
     }
 
-    // Función auxiliar para retornar valores directos en el submit
     function obtenerTotalesActuales() {
         const metodoPagoActivo = document.querySelector('input[name="metodo_pago"]:checked')?.value;
-        let descuento = 0;
-        if (metodoPagoActivo === 'efectivo' || metodoPagoActivo === 'transferencia') {
-            descuento = totalProductos * 0.05;
-        }
-        return {
-            descuento,
-            totalGeneral: (totalProductos - descuento) + costoEnvio
-        };
+        const descuento = (metodoPagoActivo === 'efectivo' || metodoPagoActivo === 'transferencia') ? totalProductos * 0.05 : 0;
+        return { descuento, totalGeneral: (totalProductos - descuento) + costoEnvio };
     }
 
-    // 3. Procesar el envío del Formulario y Pasarela WhatsApp
+    // 4. ENVÍO DE FORMULARIO CORRECTO
     if (formularioPedido) {
         formularioPedido.addEventListener('submit', async (e) => {
             e.preventDefault();
@@ -313,22 +318,32 @@ document.addEventListener('DOMContentLoaded', () => {
 
             const nombre = document.getElementById('nombre').value;
             const telefonoInput = document.getElementById('telefono').value;
-            const direccion = document.getElementById('direccion').value;
+            const zonaSelect = document.getElementById('zona-entrega'); // Corregido ID
+            const calleInput = document.getElementById('direccion-calle');
 
-            const tipoEntrega = document.querySelector('input[name="tipo_entrega"]:checked').value;
+            const tipoEntregaChecked = document.querySelector('input[name="tipo_entrega"]:checked');
+            const metodoPagoChecked = document.querySelector('input[name="metodo_pago"]:checked');
+
+            const tipoEntrega = tipoEntregaChecked ? tipoEntregaChecked.value : 'retiro';
+            const metodoPago = metodoPagoChecked ? metodoPagoChecked.value : 'mercadopago';
             const textoEntrega = tipoEntrega === 'envio' ? 'Envío a Domicilio' : 'Retiro por el Local';
-            const metodoPago = document.querySelector('input[name="metodo_pago"]:checked').value;
+
+            let direccion = "Retiro por el local";
+            if (tipoEntrega === 'envio' && zonaSelect && calleInput) {
+                const nombreZona = zonaSelect.options[zonaSelect.selectedIndex].text.split(' (')[0];
+                direccion = `${calleInput.value.trim()}, ${nombreZona}`;
+            }
 
             const { totalGeneral, descuento } = obtenerTotalesActuales();
 
             const datosPedido = {
                 cliente: { nombre, telefono: telefonoInput, direccion },
                 items: carrito,
-                tipoEntrega: tipoEntrega,
-                costoEnvio: costoEnvio,
-                descuento: descuento,
+                tipoEntrega,
+                costoEnvio,
+                descuento,
                 total: totalGeneral,
-                metodoPago: metodoPago
+                metodoPago
             };
 
             try {
@@ -346,155 +361,88 @@ document.addEventListener('DOMContentLoaded', () => {
                     mensajeWA += `*Cliente:* ${nombre}\n`;
                     mensajeWA += `*Teléfono:* ${telefonoInput}\n`;
                     mensajeWA += `*Método:* ${textoEntrega}\n`;
+                    if (tipoEntrega === 'envio') mensajeWA += `*Dirección:* ${direccion}\n`;
+                    mensajeWA += `\n*Detalle de la compra:*\n`;
 
-                    if (tipoEntrega === 'envio') {
-                        mensajeWA += `*Dirección:* ${direccion}\n\n`;
-                    } else {
-                        mensajeWA += `\n`;
-                    }
-
-                    mensajeWA += `*Detalle de la compra:*\n`;
                     carrito.forEach(item => {
                         mensajeWA += `• ${item.cantidad}x *${item.producto}* ($${(item.precio * item.cantidad).toLocaleString('es-AR')})\n`;
                         if (item.gustos && item.gustos.length > 0) {
-                            item.gustos.forEach(g => {
-                                mensajeWA += `   └ _${g.componente}: ${g.sabor}_\n`;
-                            });
+                            item.gustos.forEach(g => mensajeWA += `   └ _${g.componente}: ${g.sabor}_\n`);
                         }
                     });
 
-                    if (costoEnvio > 0) {
-                        mensajeWA += `• *Costo de Envío:* $${costoEnvio.toLocaleString('es-AR')}\n`;
-                    }
+                    if (costoEnvio > 0) mensajeWA += `• *Costo de Envío:* $${costoEnvio.toLocaleString('es-AR')}\n`;
+                    if (descuento > 0) mensajeWA += `• *Descuento (5% Off):* -$${descuento.toLocaleString('es-AR')}\n`;
 
-                    if (descuento > 0) {
-                        mensajeWA += `• *Descuento (5% Off):* -$${descuento.toLocaleString('es-AR')}\n`;
-                    }
-
-                    // Ajustamos el cierre según el pago
                     if (metodoPago === 'efectivo') {
-                        mensajeWA += `\n*Total a Pagar en Local:* $${totalGeneral.toLocaleString('es-AR')}\n\n`;
-                        mensajeWA += `¡Abono en efectivo al retirar con el descuento aplicado!`;
+                        mensajeWA += `\n*Total a Pagar:* $${totalGeneral.toLocaleString('es-AR')}\n\n¡Abono al retirar!`;
                     } else if (metodoPago === 'transferencia') {
-                        mensajeWA += `\n*Total a Transferir:* $${totalGeneral.toLocaleString('es-AR')}\n\n`;
-                        mensajeWA += `¡Solicito los datos bancarios para transferir con el descuento aplicado!`;
+                        mensajeWA += `\n*Total a Transferir:* $${totalGeneral.toLocaleString('es-AR')}\n\n¡Solicito alias bancario!`;
                     } else {
-                        mensajeWA += `\n*Total General Pagado:* $${totalGeneral.toLocaleString('es-AR')}\n\n`;
-                        mensajeWA += `¡Ya realicé el pago de forma online por Mercado Pago!`;
+                        mensajeWA += `\n*Total Pagado:* $${totalGeneral.toLocaleString('es-AR')}\n\n¡Pago realizado por Mercado Pago!`;
                     }
 
-                    const mensajeCodificado = encodeURIComponent(mensajeWA);
-                    const numeroNegocio = "541125523930";
-                    const urlWhatsApp = `https://wa.me/${numeroNegocio}?text=${mensajeCodificado}`;
+                    const urlWhatsApp = `https://wa.me/541125523930?text=${encodeURIComponent(mensajeWA)}`;
+
+                    // --- RESET TOTAL DE INTERFAZ ---
+                    carrito = []; costoEnvio = 0;
+                    actualizarInterfazCarrito();
+                    formularioPedido.reset();
+
+                    // Ocultamos los bloques manualmente para que la UI vuelva al estado inicial (Retiro)
+                    const contenedorZona = document.getElementById('contenedor-zona');
+                    const contenedorCalle = document.getElementById('contenedor-calle');
+                    if (contenedorZona) contenedorZona.style.display = 'none';
+                    if (contenedorCalle) contenedorCalle.style.display = 'none';
+
+                    if (zonaSelect) zonaSelect.required = false;
+                    if (calleInput) calleInput.required = false;
+                    // --------------------------------
 
                     if (metodoPago === 'efectivo' || metodoPago === 'transferencia') {
                         window.open(urlWhatsApp, '_blank');
-
-                        carrito = [];
-                        costoEnvio = 0;
-                        actualizarInterfazCarrito();
-                        formularioPedido.reset();
-                        const inputDireccion = document.getElementById('direccion');
-                        if (inputDireccion) inputDireccion.required = false;
-
-                        alert('¡Pedido verificado! Mandando el detalle con el descuento aplicado a WhatsApp.');
+                        alert('¡Pedido verificado! Mandando detalles a WhatsApp.');
                     } else {
                         localStorage.setItem('pending_whatsapp_url', urlWhatsApp);
-
-                        carrito = [];
-                        costoEnvio = 0;
-                        actualizarInterfazCarrito();
-                        formularioPedido.reset();
-                        const inputDireccion = document.getElementById('direccion');
-                        if (inputDireccion) inputDireccion.required = false;
-
-                        alert('¡Pedido guardado! Redirigiendo a Mercado Pago para completar tu pago...');
+                        alert('¡Pedido guardado! Redirigiendo a Mercado Pago...');
                         window.location.href = resultado.initPoint;
                     }
-
                 } else {
                     alert('Hubo un error en el servidor al procesar la orden.');
                 }
             } catch (error) {
                 console.error('Error de red:', error);
-                alert('No se pudo conectar con el servidor backend.');
+                alert('No se pudo conectar con el backend.');
             }
         });
     }
-    const datosTransferencia = document.getElementById('datos-transferencia');
 
-    document.addEventListener('change', (e) => {
-        if (e.target && e.target.name === 'metodo_pago') {
-
-            if (datosTransferencia) {
-                datosTransferencia.style.display =
-                    e.target.value === 'transferencia'
-                        ? 'block'
-                        : 'none';
-            }
-
-            actualizarInterfazCarrito();
-        }
-    });
+    // LÓGICA AUXILIAR
     document.addEventListener('click', async (e) => {
         if (e.target.classList.contains('btn-copiar')) {
             const elemento = document.getElementById(e.target.dataset.copy);
-
             try {
                 await navigator.clipboard.writeText(elemento.innerText);
-
-                const textoOriginal = e.target.innerText;
-                e.target.innerText = "✅";
-
-                setTimeout(() => {
-                    e.target.innerText = textoOriginal;
-                }, 1200);
-
-            } catch {
-                alert("No se pudo copiar el texto");
-            }
+                const original = e.target.innerText; e.target.innerText = "✅";
+                setTimeout(() => e.target.innerText = original, 1200);
+            } catch { alert("No se pudo copiar"); }
         }
     });
 
-    /* LÓGICA DEL MENÚ HAMBURGUESA */
     const menuToggle = document.getElementById("mobile-menu-btn");
     const navLinks = document.getElementById("nav-menu-links");
-
     if (menuToggle && navLinks) {
-        menuToggle.addEventListener("click", () => {
-            navLinks.classList.toggle("active");
-        });
-
-        navLinks.querySelectorAll("a").forEach(link => {
-            link.addEventListener("click", () => {
-                navLinks.classList.remove("active");
-            });
-        });
+        menuToggle.onclick = () => navLinks.classList.toggle("active");
+        navLinks.querySelectorAll("a").forEach(l => l.onclick = () => navLinks.classList.remove("active"));
     }
 
-    /* LÓGICA DE APERTURA Y CIERRE DEL PANEL LATERAL */
     const floatingBtn = document.getElementById('cart-floating-btn');
     const sidebarCart = document.getElementById('cart-sidebar');
     const closeSidebarBtn = document.getElementById('cart-sidebar-close');
     const cartOverlay = document.getElementById('cart-overlay');
-    const checkoutLink = document.getElementById('btn-sidebar-checkout');
 
-    function abrirSidebar() {
-        if (sidebarCart && cartOverlay) {
-            sidebarCart.classList.add('open');
-            cartOverlay.classList.add('open');
-        }
-    }
-
-    function cerrarSidebar() {
-        if (sidebarCart && cartOverlay) {
-            sidebarCart.classList.remove('open');
-            cartOverlay.classList.remove('open');
-        }
-    }
-
-    if (floatingBtn) floatingBtn.addEventListener('click', abrirSidebar);
-    if (closeSidebarBtn) closeSidebarBtn.addEventListener('click', cerrarSidebar);
-    if (cartOverlay) cartOverlay.addEventListener('click', cerrarSidebar);
-    if (checkoutLink) checkoutLink.addEventListener('click', cerrarSidebar);
+    if (floatingBtn) floatingBtn.onclick = () => { sidebarCart?.classList.add('open'); cartOverlay?.classList.add('open'); };
+    const cerrar = () => { sidebarCart?.classList.remove('open'); cartOverlay?.classList.remove('open'); };
+    if (closeSidebarBtn) closeSidebarBtn.onclick = cerrar;
+    if (cartOverlay) cartOverlay.onclick = cerrar;
 });
