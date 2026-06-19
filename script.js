@@ -90,7 +90,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // 2. ESCUCHAR CAMBIOS EN INPUTS SELECTS Y RADIOS
     document.addEventListener('change', (e) => {
-        const inputZona = document.getElementById('zona-entrega'); // Corregido el ID según tu HTML
+        const inputZona = document.getElementById('zona-entrega'); // ID corregido de zona-entrega
         const contenedorCalle = document.getElementById('contenedor-calle');
         const inputCalle = document.getElementById('direccion-calle');
         const tarjetaEfectivo = document.getElementById('tarjeta-efectivo');
@@ -101,14 +101,16 @@ document.addEventListener('DOMContentLoaded', () => {
 
         // A. Si cambia entre Envío o Retiro
         if (e.target && e.target.name === 'tipo_entrega') {
-            const contenedorZona = document.getElementById('contenedor-zona'); // <--- NUEVO
+            const contenedorZona = document.getElementById('contenedor-zona');
 
             if (e.target.value === 'envio') {
                 costoEnvio = 0; // Empieza en 0 hasta que seleccione la localidad real
-                if (contenedorZona) contenedorZona.style.display = 'block'; // <--- MUESTRA ZONA
-                if (inputDireccion) { // Nota: si inputDireccion ahora es zona-entrega, adaptalo abajo
-                    inputDireccion.required = true;
-                    inputDireccion.value = "";
+                if (contenedorZona) contenedorZona.style.display = 'block'; 
+                
+                // CORREGIDO: Se cambió 'inputDireccion' por 'inputZona' que sí está definida arriba
+                if (inputZona) { 
+                    inputZona.required = true;
+                    inputZona.value = "";
                 }
                 if (tarjetaEfectivo) tarjetaEfectivo.style.display = 'none';
                 if (metodoPagoActivo === 'efectivo' && inputMercadoPago) {
@@ -117,14 +119,12 @@ document.addEventListener('DOMContentLoaded', () => {
             } else {
                 // Si es Retiro, limpiamos el costo de envío y OCULTAMOS ambos contenedores
                 costoEnvio = 0;
-                if (contenedorZona) contenedorZona.style.display = 'none'; // <--- OCULTA ZONA
-                if (contenedorCalle) contenedorCalle.style.display = 'none'; // <--- OCULTA CALLE
+                if (contenedorZona) contenedorZona.style.display = 'none'; 
+                if (contenedorCalle) contenedorCalle.style.display = 'none'; 
 
-                // Reseteamos los valores y quitamos el 'required' del selector modificado
-                const selectorZona = document.getElementById('zona-entrega');
-                if (selectorZona) {
-                    selectorZona.required = false;
-                    selectorZona.value = "";
+                if (inputZona) {
+                    inputZona.required = false;
+                    inputZona.value = "";
                 }
                 if (inputCalle) {
                     inputCalle.required = false;
@@ -141,8 +141,8 @@ document.addEventListener('DOMContentLoaded', () => {
             actualizarInterfazCarrito();
         }
 
-        // B. Si cambia la Zona seleccionada en el menú desplegable (ACTUALIZADO ID)
-        if (e.target && e.target.id === 'zona-entrega') { // <--- CAMBIADO A TU NUEVO ID
+        // B. Si cambia la Zona seleccionada en el menú desplegable
+        if (e.target && e.target.id === 'zona-entrega') { 
             const valorSeleccionado = e.target.value;
 
             if (valorSeleccionado === "no-delivery") {
@@ -318,7 +318,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
             const nombre = document.getElementById('nombre').value;
             const telefonoInput = document.getElementById('telefono').value;
-            const zonaSelect = document.getElementById('zona-entrega'); // Corregido ID
+            const zonaSelect = document.getElementById('zona-entrega'); 
             const calleInput = document.getElementById('direccion-calle');
 
             const tipoEntregaChecked = document.querySelector('input[name="tipo_entrega"]:checked');
@@ -389,7 +389,6 @@ document.addEventListener('DOMContentLoaded', () => {
                     actualizarInterfazCarrito();
                     formularioPedido.reset();
 
-                    // Ocultamos los bloques manualmente para que la UI vuelva al estado inicial (Retiro)
                     const contenedorZona = document.getElementById('contenedor-zona');
                     const contenedorCalle = document.getElementById('contenedor-calle');
                     if (contenedorZona) contenedorZona.style.display = 'none';
@@ -397,7 +396,6 @@ document.addEventListener('DOMContentLoaded', () => {
 
                     if (zonaSelect) zonaSelect.required = false;
                     if (calleInput) calleInput.required = false;
-                    // --------------------------------
 
                     if (metodoPago === 'efectivo' || metodoPago === 'transferencia') {
                         window.open(urlWhatsApp, '_blank');
@@ -436,13 +434,37 @@ document.addEventListener('DOMContentLoaded', () => {
         navLinks.querySelectorAll("a").forEach(l => l.onclick = () => navLinks.classList.remove("active"));
     }
 
+    // --- CORRECCIÓN APERTURA Y CIERRE DEL CARRITO SÓLIDA ---
     const floatingBtn = document.getElementById('cart-floating-btn');
     const sidebarCart = document.getElementById('cart-sidebar');
     const closeSidebarBtn = document.getElementById('cart-sidebar-close');
     const cartOverlay = document.getElementById('cart-overlay');
+    const checkoutLink = document.getElementById('btn-sidebar-checkout'); // Enlace/Botón interno del checkout
 
-    if (floatingBtn) floatingBtn.onclick = () => { sidebarCart?.classList.add('open'); cartOverlay?.classList.add('open'); };
-    const cerrar = () => { sidebarCart?.classList.remove('open'); cartOverlay?.classList.remove('open'); };
+    const abrir = () => { 
+        if (sidebarCart) {
+            sidebarCart.classList.add('open');
+            sidebarCart.style.transform = 'translateX(0)'; // Forzado directo
+        }
+        if (cartOverlay) {
+            cartOverlay.classList.add('open');
+            cartOverlay.style.display = 'block'; // Forzado directo
+        }
+    };
+
+    const cerrar = () => { 
+        if (sidebarCart) {
+            sidebarCart.classList.remove('open');
+            sidebarCart.style.transform = 'translateX(100%)'; // Forzado directo
+        }
+        if (cartOverlay) {
+            cartOverlay.classList.remove('open');
+            cartOverlay.style.display = 'none'; // Forzado directo
+        }
+    };
+
+    if (floatingBtn) floatingBtn.onclick = abrir;
     if (closeSidebarBtn) closeSidebarBtn.onclick = cerrar;
     if (cartOverlay) cartOverlay.onclick = cerrar;
+    if (checkoutLink) checkoutLink.onclick = cerrar; // Ahora al darle click a ir a pagar, se cerrará solo.
 });
