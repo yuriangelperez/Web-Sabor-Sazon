@@ -14,7 +14,10 @@
 <body>
 
     <nav class="navbar">
-        <a href="#inicio" class="logo">Sabor y Sazón</a>
+        <a href="#inicio" class="logo">
+            <img src="files/logoSinFondoCircular.png" alt="Logo Sabor y Sazón" class="logo-img">
+            <span class="logo-text">Sabor y Sazón</span>
+        </a>
 
         <button class="menu-toggle" id="mobile-menu-btn" aria-label="Abrir menú">
             <span class="bar"></span>
@@ -615,10 +618,10 @@
                 <!-- FORMULARIO PRINCIPAL: Ahora envuelve todo el layout para que el botón derecho envíe los datos correctamente -->
                 <form id="form-pedido">
 
-                    <!-- 🔥 CONTENEDOR FLEX/GRID DE DOS COLUMNAS -->
+                    <!-- 🔥 CONTENEDOR GRID DE DOS COLUMNAS -->
                     <div class="checkout-layout">
 
-                        <!-- ⬅️ COLUMNA IZQUIERDA: Resumen, Totales y Datos del Cliente -->
+                        <!-- ⬅️ PANEL IZQUIERDO: Menú/Carrito -->
                         <div class="checkout-col-izquierda">
                             <h3>Tu Pedido</h3>
                             <div id="carrito-items"
@@ -631,7 +634,12 @@
                                 <span id="carrito-total"
                                     style="color: var(--accent-gold); font-weight: bold; font-size: 18px;">$0</span>
                             </div>
+                        </div>
 
+                        <!-- ➡️ PANEL DERECHO: Datos, Métodos y Botón -->
+                        <div class="checkout-col-derecha">
+                            <!-- Datos del Cliente (ARRIBA) -->
+                            <div class="datos-entrega-block">
                             <h3>Datos de Entrega</h3>
                             <p style="margin-bottom: 15px; color: var(--text-secondary); font-size: 14px;">
                                 Completá tus datos para coordinar el pago y envío por WhatsApp.
@@ -687,9 +695,8 @@
                             </div>
                         </div>
 
-                        <!-- ➡️ COLUMNA DERECHA: Opciones de selección y botón final -->
-                        <div class="checkout-col-derecha">
-
+                        <!-- Métodos de Entrega/Pago (ABAJO) -->
+                        <div class="metodos-block">
                             <!-- Bloque Método de Entrega -->
                             <div class="form-group">
                                 <label
@@ -698,7 +705,7 @@
                                 </label>
                                 <div class="contenedor-entrega">
                                     <label class="tarjeta-opcion">
-                                        <input type="radio" name="tipo_entrega" value="retiro" checked>
+                                        <input type="radio" name="tipo_entrega" value="retiro">
                                         <div class="contenido-tarjeta">
                                             <span class="icono">🏃‍♂️</span>
                                             <span class="titulo-opcion">Retiro por el local</span>
@@ -750,8 +757,9 @@
                                 </div>
                             </div>
 
-                            <!-- Botón de acción principal al fondo de las opciones -->
+                            <!-- Botón de acción principal -->
                             <button type="submit" class="btn-submit">Confirmar y Pagar</button>
+                        </div>
                         </div>
 
                     </div> <!-- Fin .checkout-layout -->

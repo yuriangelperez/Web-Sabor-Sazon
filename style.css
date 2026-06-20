@@ -82,12 +82,23 @@ body {
 }
 
 .logo {
+    display: inline-flex;
+    align-items: center;
+    gap: 12px;
     font-size: 26px;
     font-weight: 700;
     color: #ffffff;
-    text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.8); 
+    text-shadow: 2px 2px 4px rgba(0, 0, 0, 1);
     text-decoration: none;
     z-index: 10;
+}
+
+.logo-img {
+    width: 60px;
+    height: 60px;
+    object-fit: cover;
+    border-radius: 50%;
+    display: inline-block;
 }
 
 .menu-toggle {
@@ -172,6 +183,13 @@ body {
 }
 
 /* ==========================================================================
+   CONTENEDOR DE ZONA (OCULTO POR DEFECTO)
+   ========================================================================== */
+#contenedor-zona {
+    display: none;
+}
+
+/* ==========================================================================
    SECCIÓN HERO (BIENVENIDA CON IMAGEN)
    ========================================================================== */
 .hero {
@@ -231,13 +249,13 @@ body {
    ========================================================================== */
 .cart-floating-btn {
     position: fixed;
-    bottom: 25px;
-    right: 25px;
+    bottom: 30px;
+    right: 30px;
     background-color: rgba(0, 0, 0, 0.741);
     border: 2px solid var(--accent-gold);
     color: #000000;
-    width: 60px;
-    height: 60px;
+    width: 80px;
+    height: 80px;
     border-radius: 50%;
     cursor: pointer;
     box-shadow: 0 4px 15px rgba(0, 0, 0, 0.4);
@@ -263,10 +281,10 @@ body {
     right: -12px;
     background-color: #ef4444;
     color: #ffffff;
-    font-size: 11px;
+    font-size: 15px;
     font-weight: bold;
     padding: 3px 7px;
-    border-radius: 10px;
+    border-radius: 15px;
     border: 1.5px solid #000000;
     min-width: 20px;
     text-align: center;
@@ -276,7 +294,7 @@ body {
     position: fixed;
     top: 0;
     right: -350px; 
-    width: 340px;
+    width: 540px;
     height: 100vh;
     background-color: rgba(20, 20, 22, 0.98);
     box-shadow: -10px 0 30px rgba(0, 0, 0, 0.5);
@@ -635,6 +653,18 @@ body {
     display: flex;
     flex-direction: column;
     gap: 25px;
+}
+
+.datos-entrega-block {
+    display: flex;
+    flex-direction: column;
+    gap: 15px;
+}
+
+.metodos-block {
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
 }
 
 .form-group {

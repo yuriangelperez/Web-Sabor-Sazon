@@ -26,8 +26,9 @@ document.addEventListener('DOMContentLoaded', () => {
     // 1. MANEJADOR DE CLICS (Agregar productos y soporte para botones visuales de entrega/pago)
     document.addEventListener('click', (e) => {
         if (e.target && e.target.classList.contains('btn-agregar')) {
-            const producto = e.target.getAttribute('data-producto');
-            const precio = parseInt(e.target.getAttribute('data-precio'));
+            const boton = e.target;
+            const producto = boton.getAttribute('data-producto');
+            const precio = parseInt(boton.getAttribute('data-precio'));
 
             const cardBody = e.target.closest('.card-body') || e.target.closest('.menu-card');
             let gustosElegidos = [];
@@ -64,6 +65,19 @@ document.addEventListener('DOMContentLoaded', () => {
             } else {
                 carrito.push({ producto, cantidad: 1, precio, gustos: gustosElegidos });
             }
+            
+            // Cambiar el botón a "Agregado" temporalmente
+            const textoOriginal = boton.innerText;
+            boton.innerText = '✓ Agregado!';
+            boton.disabled = true;
+            boton.style.opacity = '0.7';
+            
+            setTimeout(() => {
+                boton.innerText = textoOriginal;
+                boton.disabled = false;
+                boton.style.opacity = '1';
+            }, 2000);
+            
             actualizarInterfazCarrito();
             return;
         }
