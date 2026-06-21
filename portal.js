@@ -31,6 +31,11 @@ const deleteFilteredBtn = document.getElementById('delete-filtered-btn');
 const deleteAllBtn = document.getElementById('delete-all-btn');
 
 let pedidosActuales = [];
+let autoRefreshTimer = null;
+let pedidosConocidos = new Set();
+let audioContext = null;
+let pedidosStream = null;
+let pedidosStreamReconnectTimer = null;
 
 function getToken() {
     return sessionStorage.getItem(TOKEN_KEY) || '';
@@ -107,6 +112,85 @@ function renderPedidos(pedidos) {
     }).join('');
 }
 
+function setupAudioUnlock() {
+    const unlockAudio = () => {
+        if (!audioContext) {
+            const Ctx = window.AudioContext || window.webkitAudioContext;
+            if (Ctx) {
+                audioContext = new Ctx();
+            }
+        }
+
+        if (audioContext && audioContext.state === 'suspended') {
+            audioContext.resume().catch(() => {});
+        }
+    };
+
+    window.addEventListener('pointerdown', unlockAudio, { once: true });
+    window.addEventListener('keydown', unlockAudio, { once: true });
+}
+
+function sonarNotificacionNuevoPedido() {
+    try {
+        if (!audioContext) {
+            const Ctx = window.AudioContext || window.webkitAudioContext;
+            if (!Ctx) return;
+            audioContext = new Ctx();
+        }
+
+        if (audioContext.state === 'suspended') {
+            audioContext.resume().catch(() => {});
+        }
+
+        const ahora = audioContext.currentTime;
+        const tonos = [880, 1175];
+
+        tonos.forEach((frecuencia, index) => {
+            const osc = audioContext.createOscillator();
+            const gain = audioContext.createGain();
+
+            osc.type = 'sine';
+            osc.frequency.setValueAtTime(frecuencia, ahora);
+
+            gain.gain.setValueAtTime(0.0001, ahora);
+            gain.gain.exponentialRampToValueAtTime(0.2, ahora + 0.01 + index * 0.13);
+            gain.gain.exponentialRampToValueAtTime(0.0001, ahora + 0.12 + index * 0.13);
+
+            osc.connect(gain);
+            gain.connect(audioContext.destination);
+
+            const startAt = ahora + index * 0.13;
+            const stopAt = startAt + 0.12;
+            osc.start(startAt);
+            osc.stop(stopAt);
+        });
+    } catch {
+        // Si el navegador bloquea audio, el panel sigue funcionando sin sonido.
+    }
+}
+
+function detectarNuevosPedidos(pedidos) {
+    const idsActuales = new Set((pedidos || []).map((pedido) => String(pedido._id)));
+
+    if (pedidosConocidos.size === 0) {
+        pedidosConocidos = idsActuales;
+        return 0;
+    }
+
+    let nuevos = 0;
+    idsActuales.forEach((id) => {
+        if (!pedidosConocidos.has(id)) nuevos += 1;
+    });
+
+    pedidosConocidos = idsActuales;
+    return nuevos;
+}
+
+function registrarPedidoConocidoDesdeEvento(pedido) {
+    if (!pedido || !pedido._id) return;
+    pedidosConocidos.add(String(pedido._id));
+}
+
 function construirQueryPedidos() {
     const params = new URLSearchParams();
     params.set('limit', '1000');
@@ -179,11 +263,77 @@ async function cargarEstado() {
 async function cargarPedidos() {
     const query = construirQueryPedidos();
     const data = await fetchAdmin(`/api/admin/pedidos?${query}`);
-    renderPedidos(data.pedidos || []);
+    const pedidos = data.pedidos || [];
+    const nuevos = detectarNuevosPedidos(pedidos);
+    renderPedidos(pedidos);
+
+    if (nuevos > 0) {
+        sonarNotificacionNuevoPedido();
+        statusFeedback.textContent = `Llegaron ${nuevos} pedido${nuevos === 1 ? '' : 's'} nuevo${nuevos === 1 ? '' : 's'}.`;
+    }
 }
 
 async function inicializarPanel() {
     await Promise.all([cargarEstado(), cargarPedidos()]);
+}
+
+function iniciarAutoRefrescoPedidos() {
+    if (autoRefreshTimer) return;
+
+    autoRefreshTimer = setInterval(async () => {
+        try {
+            await cargarPedidos();
+        } catch {
+            statusFeedback.textContent = 'No se pudo refrescar pedidos automaticamente.';
+        }
+    }, 20000);
+}
+
+function detenerAutoRefrescoPedidos() {
+    if (!autoRefreshTimer) return;
+    clearInterval(autoRefreshTimer);
+    autoRefreshTimer = null;
+}
+
+function detenerStreamPedidos() {
+    if (pedidosStream) {
+        pedidosStream.close();
+        pedidosStream = null;
+    }
+
+    if (pedidosStreamReconnectTimer) {
+        clearTimeout(pedidosStreamReconnectTimer);
+        pedidosStreamReconnectTimer = null;
+    }
+}
+
+function iniciarStreamPedidos() {
+    if (pedidosStream || typeof EventSource === 'undefined') return;
+
+    const token = getToken();
+    if (!token) return;
+
+    const streamUrl = `${API_BASE}/api/admin/pedidos/stream?token=${encodeURIComponent(token)}`;
+    pedidosStream = new EventSource(streamUrl);
+
+    pedidosStream.addEventListener('pedido_nuevo', async (event) => {
+        try {
+            const payload = JSON.parse(event.data || '{}');
+            registrarPedidoConocidoDesdeEvento(payload.pedido);
+            sonarNotificacionNuevoPedido();
+            statusFeedback.textContent = 'Llego un pedido nuevo.';
+            await cargarPedidos();
+        } catch {
+            // Si falla el parseo, seguimos con polling como respaldo.
+        }
+    });
+
+    pedidosStream.onerror = () => {
+        detenerStreamPedidos();
+        pedidosStreamReconnectTimer = setTimeout(() => {
+            iniciarStreamPedidos();
+        }, 5000);
+    };
 }
 
 loginForm.addEventListener('submit', async (event) => {
@@ -209,6 +359,8 @@ loginForm.addEventListener('submit', async (event) => {
         setToken(data.token);
         setAuthenticatedUI(true);
         await inicializarPanel();
+        iniciarAutoRefrescoPedidos();
+        iniciarStreamPedidos();
     } catch (error) {
         loginError.textContent = error.message || 'Usuario o contraseña incorrectos.';
     }
@@ -429,11 +581,14 @@ if (ordersList) {
 }
 
 logoutBtn.addEventListener('click', () => {
+    detenerStreamPedidos();
+    detenerAutoRefrescoPedidos();
     clearToken();
     setAuthenticatedUI(false);
     loginForm.reset();
     statusFeedback.textContent = '';
     if (createUserFeedback) createUserFeedback.textContent = '';
+    pedidosConocidos = new Set();
 });
 
 async function bootstrap() {
@@ -454,18 +609,16 @@ async function bootstrap() {
     setAuthenticatedUI(true);
     try {
         await inicializarPanel();
-        setInterval(async () => {
-            try {
-                await cargarPedidos();
-            } catch (error) {
-                statusFeedback.textContent = 'No se pudo refrescar pedidos automaticamente.';
-            }
-        }, 20000);
+        iniciarAutoRefrescoPedidos();
+        iniciarStreamPedidos();
     } catch (error) {
+        detenerStreamPedidos();
+        detenerAutoRefrescoPedidos();
         clearToken();
         setAuthenticatedUI(false);
         loginError.textContent = 'Sesión expirada. Iniciá sesión nuevamente.';
     }
 }
 
+setupAudioUnlock();
 bootstrap();

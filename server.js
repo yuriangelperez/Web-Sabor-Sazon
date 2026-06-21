@@ -60,6 +60,7 @@ const EstadoLocalSchema = new mongoose.Schema({
     actualizadoEn: { type: Date, default: Date.now }
 });
 const EstadoLocal = mongoose.model('EstadoLocal', EstadoLocalSchema);
+const clientesSSEPedidos = new Set();
 
 async function obtenerEstadoLocal() {
     let estado = await EstadoLocal.findOne({ key: 'main' });
@@ -90,6 +91,33 @@ function authAdmin(req, res, next) {
 
     req.admin = { username: payload.u };
     next();
+}
+
+function authAdminSSE(req, res, next) {
+    const token = String(req.query?.token || '');
+    if (!token) {
+        return res.status(401).json({ success: false, message: 'No autorizado' });
+    }
+
+    const payload = verificarTokenAdmin(token);
+    if (!payload) {
+        return res.status(401).json({ success: false, message: 'Sesion vencida o invalida' });
+    }
+
+    req.admin = { username: payload.u };
+    next();
+}
+
+function emitirPedidoNuevoSSE(pedido) {
+    const data = JSON.stringify({
+        type: 'pedido_nuevo',
+        pedido
+    });
+
+    clientesSSEPedidos.forEach((res) => {
+        res.write(`event: pedido_nuevo\n`);
+        res.write(`data: ${data}\n\n`);
+    });
 }
 
 function toBase64Url(input) {
@@ -285,6 +313,23 @@ app.get('/api/admin/pedidos', authAdmin, async (req, res) => {
     }
 });
 
+app.get('/api/admin/pedidos/stream', authAdminSSE, (req, res) => {
+    res.setHeader('Content-Type', 'text/event-stream');
+    res.setHeader('Cache-Control', 'no-cache');
+    res.setHeader('Connection', 'keep-alive');
+    res.setHeader('X-Accel-Buffering', 'no');
+    res.flushHeaders();
+
+    res.write(`event: ready\n`);
+    res.write(`data: ${JSON.stringify({ ok: true })}\n\n`);
+
+    clientesSSEPedidos.add(res);
+
+    req.on('close', () => {
+        clientesSSEPedidos.delete(res);
+    });
+});
+
 app.delete('/api/admin/pedidos/:id', authAdmin, async (req, res) => {
     try {
         const { id } = req.params;
@@ -394,6 +439,7 @@ app.post('/api/pedidos', async (req, res) => {
         // Guardamos primero en la base de datos
         const nuevoPedido = new Pedido(req.body);
         await nuevoPedido.save();
+        emitirPedidoNuevoSSE(nuevoPedido);
 
         // Estructuramos los items para Mercado Pago a partir del carrito recibido
         const itemsMP = req.body.items.map(item => ({
