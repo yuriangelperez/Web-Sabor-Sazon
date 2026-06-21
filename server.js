@@ -323,6 +323,45 @@ app.delete('/api/admin/pedidos', authAdmin, async (req, res) => {
     }
 });
 
+app.put('/api/admin/pedidos/:id/estado', authAdmin, async (req, res) => {
+    try {
+        const { id } = req.params;
+        const estadoRaw = String(req.body?.estado || '').trim();
+        const estadoNormalizado = estadoRaw.toLowerCase();
+
+        const estadosPermitidos = {
+            pendiente: 'Pendiente',
+            hecho: 'Hecho',
+            cancelado: 'Cancelado'
+        };
+
+        if (!estadosPermitidos[estadoNormalizado]) {
+            return res.status(400).json({
+                success: false,
+                message: 'Estado inválido. Usa Pendiente, Hecho o Cancelado.'
+            });
+        }
+
+        const pedido = await Pedido.findByIdAndUpdate(
+            id,
+            { $set: { estado: estadosPermitidos[estadoNormalizado] } },
+            { new: true }
+        );
+
+        if (!pedido) {
+            return res.status(404).json({ success: false, message: 'Pedido no encontrado.' });
+        }
+
+        return res.status(200).json({
+            success: true,
+            message: `Estado actualizado a ${pedido.estado}.`,
+            pedido
+        });
+    } catch (error) {
+        return res.status(500).json({ success: false, message: 'No se pudo actualizar el estado del pedido.' });
+    }
+});
+
 // 3. RUTA POST ACTUALIZADA: Guarda el pedido y genera el link de Mercado Pago
 app.post('/api/pedidos', async (req, res) => {
     try {

@@ -229,11 +229,43 @@ input[type='date'] {
 .order-actions {
     display: flex;
     gap: 8px;
+    align-items: center;
 }
 
 .btn-small {
     padding: 6px 10px;
     font-size: 12px;
+}
+
+.order-status-select {
+    background: #0f0f14;
+    color: var(--text);
+    border: 1px solid #333344;
+    border-radius: 8px;
+    padding: 6px 8px;
+    font-size: 12px;
+}
+
+.estado-badge {
+    padding: 2px 8px;
+    border-radius: 999px;
+    font-weight: 600;
+    font-size: 12px;
+}
+
+.estado-pendiente {
+    background: rgba(250, 204, 21, 0.16);
+    color: #fde68a;
+}
+
+.estado-hecho {
+    background: rgba(34, 197, 94, 0.18);
+    color: #86efac;
+}
+
+.estado-cancelado {
+    background: rgba(239, 68, 68, 0.2);
+    color: #fca5a5;
 }
 
 .order-meta,

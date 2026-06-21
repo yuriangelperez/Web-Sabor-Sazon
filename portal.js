@@ -73,6 +73,7 @@ function renderPedidos(pedidos) {
 
     ordersList.innerHTML = pedidos.map((pedido) => {
         const items = (pedido.items || []).map((item) => `${item.cantidad}x ${item.producto}`).join(' • ');
+        const estadoActual = (pedido.estado || 'Pendiente').toLowerCase();
         return `
             <article class="order-item">
                 <div class="order-top">
@@ -81,6 +82,12 @@ function renderPedidos(pedidos) {
                         <span>${formatDate(pedido.fecha)}</span>
                     </div>
                     <div class="order-actions">
+                        <select class="order-status-select" data-id="${pedido._id}">
+                            <option value="pendiente" ${estadoActual === 'pendiente' ? 'selected' : ''}>Pendiente</option>
+                            <option value="hecho" ${estadoActual === 'hecho' ? 'selected' : ''}>Hecho</option>
+                            <option value="cancelado" ${estadoActual === 'cancelado' ? 'selected' : ''}>Cancelado</option>
+                        </select>
+                        <button type="button" class="btn btn-small btn-primary btn-save-status" data-id="${pedido._id}">Guardar</button>
                         <button type="button" class="btn btn-danger btn-small btn-delete-order" data-id="${pedido._id}">Borrar</button>
                     </div>
                 </div>
@@ -88,7 +95,7 @@ function renderPedidos(pedidos) {
                     ${pedido.cliente?.nombre || 'Sin nombre'} | ${pedido.cliente?.telefono || 'Sin telefono'}
                 </div>
                 <div class="order-meta">
-                    Entrega: ${pedido.tipoEntrega || 'retiro'} | ${pedido.cliente?.direccion || 'Sin direccion'}
+                    Entrega: ${pedido.tipoEntrega || 'retiro'} | ${pedido.cliente?.direccion || 'Sin direccion'} | Estado: <span class="estado-badge estado-${estadoActual}">${pedido.estado || 'Pendiente'}</span>
                 </div>
                 <div class="order-items">${items || 'Sin items'}</div>
                 <div class="order-total">Total: $${Number(pedido.total || 0).toLocaleString('es-AR')}</div>
@@ -337,6 +344,7 @@ if (exportXlsxBtn) {
         const filas = pedidosActuales.map((pedido) => ({
             ID: pedido._id,
             Fecha: formatDate(pedido.fecha),
+            Estado: pedido.estado || 'Pendiente',
             Cliente: pedido.cliente?.nombre || '',
             Telefono: pedido.cliente?.telefono || '',
             Entrega: pedido.tipoEntrega || '',
@@ -374,6 +382,28 @@ if (ordersList) {
                 await cargarPedidos();
             } catch (error) {
                 statusFeedback.textContent = `No se pudo eliminar el pedido: ${error.message}`;
+            }
+        }
+
+        if (target.classList.contains('btn-save-status')) {
+            const id = target.dataset.id;
+            if (!id) return;
+
+            const card = target.closest('.order-item');
+            const select = card ? card.querySelector('.order-status-select') : null;
+            const estado = select ? select.value : '';
+            if (!estado) return;
+
+            statusFeedback.textContent = 'Actualizando estado del pedido...';
+            try {
+                const result = await fetchAdmin(`/api/admin/pedidos/${id}/estado`, {
+                    method: 'PUT',
+                    body: JSON.stringify({ estado })
+                });
+                statusFeedback.textContent = result.message || 'Estado actualizado.';
+                await cargarPedidos();
+            } catch (error) {
+                statusFeedback.textContent = `No se pudo actualizar estado: ${error.message}`;
             }
         }
     });
