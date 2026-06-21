@@ -650,6 +650,12 @@ document.addEventListener('DOMContentLoaded', () => {
                     return;
                 }
 
+                if (!respuesta.ok) {
+                    const detalleError = resultado?.message || resultado?.error || 'Hubo un error en el servidor al procesar la orden.';
+                    alert(detalleError);
+                    return;
+                }
+
                 if (resultado.success) {
                     let mensajeWA = `*NUEVO PEDIDO - SABOR & SAZÓN*\n`;
                     mensajeWA += `_ID de Orden: ${resultado.pedidoId}_\n\n`;
@@ -701,7 +707,7 @@ document.addEventListener('DOMContentLoaded', () => {
                         window.location.href = resultado.initPoint;
                     }
                 } else {
-                    alert('Hubo un error en el servidor al procesar la orden.');
+                    alert(resultado?.message || resultado?.error || 'Hubo un error en el servidor al procesar la orden.');
                 }
             } catch (error) {
                 console.error('Error de red:', error);

@@ -10,7 +10,13 @@ const { MercadoPagoConfig, Preference } = require('mercadopago');
 
 const app = express();
 const PORT = process.env.PORT || 5000;
-const MERCADOPAGO_ACCESS_TOKEN = String(process.env.MERCADOPAGO_ACCESS_TOKEN || '').trim();
+const MERCADOPAGO_ACCESS_TOKEN = String(
+    process.env.MERCADOPAGO_ACCESS_TOKEN
+    || process.env.MERCADO_PAGO_ACCESS_TOKEN
+    || process.env.MP_ACCESS_TOKEN
+    || process.env.ACCESS_TOKEN
+    || ''
+).trim();
 
 // 2. Configurar Mercado Pago con tu Access Token
 const client = MERCADOPAGO_ACCESS_TOKEN
@@ -683,7 +689,7 @@ app.post('/api/pedidos', async (req, res) => {
             return res.status(500).json({
                 success: false,
                 code: 'MERCADOPAGO_CONFIG_INVALIDA',
-                message: 'Mercado Pago no está configurado correctamente en el servidor.'
+                message: 'Mercado Pago no está configurado correctamente en el servidor. Revisá la variable MERCADOPAGO_ACCESS_TOKEN y reiniciá el backend.'
             });
         }
 
