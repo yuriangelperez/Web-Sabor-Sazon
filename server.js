@@ -18,7 +18,8 @@ const MERCADOPAGO_ACCESS_TOKEN = String(
     || ''
 ).trim();
 
-// 2. Configurar Mercado Pago con tu Access Token
+// 2. Configurar Mercado Pago desde variables de entorno.
+// Usa MERCADOPAGO_ACCESS_TOKEN en tu entorno local o en Render.
 const client = MERCADOPAGO_ACCESS_TOKEN
     ? new MercadoPagoConfig({ accessToken: MERCADOPAGO_ACCESS_TOKEN })
     : null;
@@ -323,6 +324,25 @@ function validarPassword(password, hashEsperado, salt) {
 
 app.get('/', (req, res) => {
     res.status(200).json({ success: true, message: "¡Servidor de Sabor & Sazón en línea!" });
+});
+
+app.get('/api/debug/mercadopago-status', (req, res) => {
+    const token = MERCADOPAGO_ACCESS_TOKEN;
+    const configured = Boolean(token);
+    const validFormat = tokenMercadoPagoPareceValido(token);
+
+    res.status(200).json({
+        success: true,
+        configured,
+        validFormat,
+        tokenSuffix: configured ? token.slice(-6) : null,
+        tokenPrefix: configured ? token.slice(0, 7) : null,
+        envSource: process.env.MERCADOPAGO_ACCESS_TOKEN ? 'MERCADOPAGO_ACCESS_TOKEN'
+            : process.env.MERCADO_PAGO_ACCESS_TOKEN ? 'MERCADO_PAGO_ACCESS_TOKEN'
+            : process.env.MP_ACCESS_TOKEN ? 'MP_ACCESS_TOKEN'
+            : process.env.ACCESS_TOKEN ? 'ACCESS_TOKEN'
+            : null
+    });
 });
 
 app.post('/api/admin/login', async (req, res) => {
