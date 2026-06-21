@@ -100,6 +100,7 @@ const DisponibilidadSchema = new mongoose.Schema({
 DisponibilidadSchema.index({ tipo: 1, nombre: 1 }, { unique: true });
 const Disponibilidad = mongoose.model('Disponibilidad', DisponibilidadSchema);
 const clientesSSEPedidos = new Set();
+const RELLENOS_PREMIUM_BASE = ['Catira', 'Pelua', 'Pabellon'];
 
 function obtenerCatalogoPreciosBase() {
     try {
@@ -147,9 +148,12 @@ function obtenerRellenosBase() {
             rellenos.add(valor);
         }
 
+        // Asegura que los rellenos premium siempre aparezcan en el portal de disponibilidad.
+        RELLENOS_PREMIUM_BASE.forEach((relleno) => rellenos.add(relleno));
+
         return Array.from(rellenos);
     } catch {
-        return [];
+        return [...RELLENOS_PREMIUM_BASE];
     }
 }
 

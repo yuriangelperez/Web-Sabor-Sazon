@@ -130,6 +130,14 @@ function escapeHtml(value) {
         .replaceAll("'", '&#39;');
 }
 
+function normalizarTexto(value) {
+    return String(value || '')
+        .normalize('NFD')
+        .replace(/[\u0300-\u036f]/g, '')
+        .trim()
+        .toLowerCase();
+}
+
 function detectarCoccionArepa(item) {
     const gustos = Array.isArray(item?.gustos) ? item.gustos : [];
     const texto = gustos
@@ -337,13 +345,16 @@ function renderDisponibilidadRellenos(rellenos) {
         return;
     }
 
+    const premium = new Set(['catira', 'pelua', 'pabellon']);
+
     availabilityFillingsList.innerHTML = rellenos.map((item) => {
         const nombre = String(item?.nombre || 'Relleno');
         const habilitado = Boolean(item?.habilitado);
         const encoded = encodeURIComponent(nombre);
+        const esPremium = premium.has(normalizarTexto(nombre));
         return `
             <label class="availability-row ${habilitado ? 'is-enabled' : 'is-disabled'}">
-                <span>${escapeHtml(nombre)}</span>
+                <span>${escapeHtml(nombre)}${esPremium ? ' <small>(Premium)</small>' : ''}</span>
                 <input type="checkbox" class="availability-toggle" data-tipo="relleno" data-nombre="${encoded}" ${habilitado ? 'checked' : ''}>
             </label>
         `;

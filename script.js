@@ -309,8 +309,8 @@ document.addEventListener('DOMContentLoaded', () => {
             opciones.forEach((option) => {
                 const valor = String(option.value || '').trim();
                 if (!valor || /^\d+$/.test(valor)) return;
-                if (valor.toLowerCase() === 'asada' || valor.toLowerCase() === 'frita') return;
-                option.disabled = rellenosNoDisponibles.has(valor);
+                if (normalizarTexto(valor) === 'asada' || normalizarTexto(valor) === 'frita') return;
+                option.disabled = rellenosNoDisponibles.has(normalizarTexto(valor));
             });
 
             const seleccionActual = select.options[select.selectedIndex];
@@ -339,7 +339,7 @@ document.addEventListener('DOMContentLoaded', () => {
             rellenosNoDisponibles.clear();
             (data.rellenos || []).forEach((item) => {
                 if (item && item.nombre && item.habilitado === false) {
-                    rellenosNoDisponibles.add(String(item.nombre));
+                    rellenosNoDisponibles.add(normalizarTexto(item.nombre));
                 }
             });
 
