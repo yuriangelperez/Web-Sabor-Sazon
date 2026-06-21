@@ -98,6 +98,20 @@ function formatMetodoPago(value) {
     return 'No informado';
 }
 
+function formatEstadoPago(value) {
+    const raw = String(value || '').trim().toLowerCase();
+    if (raw === 'paid' || raw === 'approved') return 'Pagado';
+    if (raw === 'rejected' || raw === 'cancelled' || raw === 'failed') return 'Rechazado';
+    return 'Pendiente';
+}
+
+function obtenerClaseEstadoPago(value) {
+    const raw = String(value || '').trim().toLowerCase();
+    if (raw === 'paid' || raw === 'approved') return 'pago-pagado';
+    if (raw === 'rejected' || raw === 'cancelled' || raw === 'failed') return 'pago-rechazado';
+    return 'pago-pendiente';
+}
+
 function obtenerCategoriaProducto(producto) {
     const p = String(producto || '').toLowerCase();
     if (p.startsWith('combo')) return 'Combos';
@@ -160,6 +174,8 @@ function renderPedidos(pedidos) {
         }).join('');
         const estadoActual = (pedido.estado || 'Pendiente').toLowerCase();
         const metodoPago = formatMetodoPago(pedido.metodoPago);
+        const estadoPagoLabel = formatEstadoPago(pedido.payment_status);
+        const estadoPagoClase = obtenerClaseEstadoPago(pedido.payment_status);
         return `
             <article class="order-item">
                 <div class="order-top">
@@ -174,6 +190,12 @@ function renderPedidos(pedidos) {
                             <option value="cancelado" ${estadoActual === 'cancelado' ? 'selected' : ''}>Cancelado</option>
                         </select>
                         <button type="button" class="btn btn-small btn-primary btn-save-status" data-id="${pedido._id}">Guardar</button>
+                        <select class="order-status-select order-payment-select" data-id="${pedido._id}">
+                            <option value="pending" ${(pedido.payment_status || 'pending') === 'pending' ? 'selected' : ''}>Pago pendiente</option>
+                            <option value="paid" ${(pedido.payment_status || '') === 'paid' || (pedido.payment_status || '') === 'approved' ? 'selected' : ''}>Pago realizado</option>
+                            <option value="rejected" ${(pedido.payment_status || '') === 'rejected' || (pedido.payment_status || '') === 'cancelled' || (pedido.payment_status || '') === 'failed' ? 'selected' : ''}>Pago rechazado</option>
+                        </select>
+                        <button type="button" class="btn btn-small btn-primary btn-save-payment" data-id="${pedido._id}">Guardar pago</button>
                         <button type="button" class="btn btn-danger btn-small btn-delete-order" data-id="${pedido._id}">Borrar</button>
                     </div>
                 </div>
@@ -184,7 +206,7 @@ function renderPedidos(pedidos) {
                     Entrega: ${pedido.tipoEntrega || 'retiro'} | ${pedido.cliente?.direccion || 'Sin direccion'} | Estado: <span class="estado-badge estado-${estadoActual}">${pedido.estado || 'Pendiente'}</span>
                 </div>
                 <div class="order-meta">
-                    Pago: ${metodoPago}
+                    Pago: ${metodoPago} | Estado pago: <span class="estado-badge ${estadoPagoClase}">${estadoPagoLabel}</span>
                 </div>
                 <div class="order-items">${items || 'Sin items'}</div>
                 <div class="order-total">Total: $${Number(pedido.total || 0).toLocaleString('es-AR')}</div>
@@ -828,6 +850,28 @@ if (ordersList) {
                 await cargarPedidos();
             } catch (error) {
                 statusFeedback.textContent = `No se pudo actualizar estado: ${error.message}`;
+            }
+        }
+
+        if (target.classList.contains('btn-save-payment')) {
+            const id = target.dataset.id;
+            if (!id) return;
+
+            const card = target.closest('.order-item');
+            const select = card ? card.querySelector('.order-payment-select') : null;
+            const paymentStatus = select ? select.value : '';
+            if (!paymentStatus) return;
+
+            statusFeedback.textContent = 'Actualizando estado de pago...';
+            try {
+                const result = await fetchAdmin(`/api/admin/pedidos/${id}/pago`, {
+                    method: 'PUT',
+                    body: JSON.stringify({ paymentStatus })
+                });
+                statusFeedback.textContent = result.message || 'Estado de pago actualizado.';
+                await cargarPedidos();
+            } catch (error) {
+                statusFeedback.textContent = `No se pudo actualizar el estado de pago: ${error.message}`;
             }
         }
     });

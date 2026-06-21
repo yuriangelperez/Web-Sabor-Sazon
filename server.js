@@ -824,6 +824,54 @@ app.put('/api/admin/pedidos/:id/estado', authAdmin, async (req, res) => {
     }
 });
 
+app.put('/api/admin/pedidos/:id/pago', authAdmin, async (req, res) => {
+    try {
+        const { id } = req.params;
+        const paymentRaw = String(req.body?.paymentStatus || req.body?.payment_status || '').trim().toLowerCase();
+
+        const pagosPermitidos = {
+            pending: 'pending',
+            paid: 'paid',
+            approved: 'paid',
+            rejected: 'rejected',
+            cancelled: 'rejected',
+            failed: 'rejected'
+        };
+
+        const paymentStatus = pagosPermitidos[paymentRaw];
+        if (!paymentStatus) {
+            return res.status(400).json({
+                success: false,
+                message: 'Estado de pago invalido. Usa pending, paid o rejected.'
+            });
+        }
+
+        const pedido = await Pedido.findByIdAndUpdate(
+            id,
+            { $set: { payment_status: paymentStatus } },
+            { new: true }
+        );
+
+        if (!pedido) {
+            return res.status(404).json({ success: false, message: 'Pedido no encontrado.' });
+        }
+
+        const mensaje = paymentStatus === 'paid'
+            ? 'Pago marcado como realizado.'
+            : paymentStatus === 'rejected'
+                ? 'Pago marcado como rechazado.'
+                : 'Pago marcado como pendiente.';
+
+        return res.status(200).json({
+            success: true,
+            message: mensaje,
+            pedido
+        });
+    } catch (error) {
+        return res.status(500).json({ success: false, message: 'No se pudo actualizar el estado de pago.' });
+    }
+});
+
 // 3. RUTA POST ACTUALIZADA: Guarda el pedido y genera el link de Mercado Pago
 app.post('/api/pedidos', async (req, res) => {
     try {
