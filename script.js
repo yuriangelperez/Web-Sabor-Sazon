@@ -62,8 +62,15 @@ document.addEventListener('DOMContentLoaded', () => {
             const res = await fetch(`${API_BASE}/api/estado-local`);
             const data = await res.json();
             if (data.success) {
-                aplicarEstadoLocalEnUI(Boolean(data.abierto));
-                return Boolean(data.abierto);
+                const abierto = Boolean(data.abierto);
+                aplicarEstadoLocalEnUI(abierto);
+                if (!abierto && bannerEstado) {
+                    bannerEstado.textContent = data.fueraDeHorario
+                        ? `El local está cerrado por el momento. Nuestro horario de atención es de ${data.horario || '10:00 - 22:00'} hs.`
+                        : 'El local se encuentra cerrado por el momento. Volve mas tarde para realizar pedidos.';
+                    bannerEstado.classList.remove('hidden');
+                }
+                return abierto;
             }
         } catch (error) {
             console.error('No se pudo consultar estado del local:', error);

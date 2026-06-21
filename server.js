@@ -69,6 +69,13 @@ async function obtenerEstadoLocal() {
     return estado;
 }
 
+// Retorna true si el horario actual (Argentina UTC-3) está entre 10:00 y 22:00
+function estaEnHorario() {
+    const ahora = new Date();
+    const horasArg = ((ahora.getUTCHours() - 3) + 24) % 24;
+    return horasArg >= 10 && horasArg < 22;
+}
+
 function authAdmin(req, res, next) {
     const authHeader = req.headers.authorization || '';
     const token = authHeader.startsWith('Bearer ') ? authHeader.slice(7) : null;
@@ -209,7 +216,16 @@ app.post('/api/admin/usuarios', authAdmin, async (req, res) => {
 app.get('/api/estado-local', async (req, res) => {
     try {
         const estado = await obtenerEstadoLocal();
-        res.status(200).json({ success: true, abierto: estado.abierto, actualizadoEn: estado.actualizadoEn });
+        const dentroHorario = estaEnHorario();
+        // Si está fuera del horario automático (10-22 Arg), el local siempre está cerrado
+        const abiertoFinal = dentroHorario ? estado.abierto : false;
+        res.status(200).json({
+            success: true,
+            abierto: abiertoFinal,
+            fueraDeHorario: !dentroHorario,
+            horario: '10:00 - 22:00',
+            actualizadoEn: estado.actualizadoEn
+        });
     } catch (error) {
         res.status(500).json({ success: false, message: 'No se pudo obtener el estado del local' });
     }
@@ -366,7 +382,8 @@ app.put('/api/admin/pedidos/:id/estado', authAdmin, async (req, res) => {
 app.post('/api/pedidos', async (req, res) => {
     try {
         const estadoLocal = await obtenerEstadoLocal();
-        if (!estadoLocal.abierto) {
+        const dentroHorario = estaEnHorario();
+        if (!dentroHorario || !estadoLocal.abierto) {
             return res.status(403).json({
                 success: false,
                 code: 'LOCAL_CERRADO',
