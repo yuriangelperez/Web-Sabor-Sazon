@@ -33,6 +33,37 @@ document.addEventListener('DOMContentLoaded', () => {
         return `$${Number(value || 0).toLocaleString('es-AR')}`;
     }
 
+    function aplicarPreciosEnvioEnCheckout(envios = []) {
+        const selectZona = document.getElementById('zona-entrega');
+        if (!(selectZona instanceof HTMLSelectElement)) return;
+
+        const mapa = new Map(
+            (Array.isArray(envios) ? envios : [])
+                .map((item) => [String(item?.zona || ''), Number(item?.precio)])
+        );
+
+        Array.from(selectZona.options).forEach((option) => {
+            const valor = String(option.value || '').trim();
+            if (!valor || valor === 'no-delivery') return;
+
+            const zona = (option.dataset.zona || option.textContent || '')
+                .replace(/\s*\(\+\$?[^)]*\)\s*/i, '')
+                .trim();
+
+            if (!zona) return;
+            option.dataset.zona = zona;
+
+            if (!mapa.has(zona)) return;
+
+            const precio = Number(mapa.get(zona));
+            if (!Number.isFinite(precio) || precio <= 0) return;
+
+            const precioRedondeado = Math.round(precio);
+            option.value = String(precioRedondeado);
+            option.textContent = `${zona} (+${formatPriceARS(precioRedondeado)})`;
+        });
+    }
+
     function aplicarPreciosEnMenu(precios = []) {
         const preciosMap = new Map(
             (Array.isArray(precios) ? precios : [])
@@ -65,6 +96,18 @@ document.addEventListener('DOMContentLoaded', () => {
             }
         } catch (error) {
             console.error('No se pudo cargar el catalogo de precios:', error);
+        }
+    }
+
+    async function cargarPreciosEnvio() {
+        try {
+            const res = await fetch(`${API_BASE}/api/envios`);
+            const data = await res.json();
+            if (data?.success) {
+                aplicarPreciosEnvioEnCheckout(data.envios || []);
+            }
+        } catch (error) {
+            console.error('No se pudo cargar el catalogo de envios:', error);
         }
     }
 
@@ -277,6 +320,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     consultarEstadoLocal();
     cargarPreciosActualizados();
+    cargarPreciosEnvio();
     cargarDisponibilidad();
     inicializarBotonesVerImagen();
 

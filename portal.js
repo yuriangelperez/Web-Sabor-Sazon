@@ -32,6 +32,7 @@ const exportXlsxBtn = document.getElementById('export-xlsx-btn');
 const deleteFilteredBtn = document.getElementById('delete-filtered-btn');
 const deleteAllBtn = document.getElementById('delete-all-btn');
 const pricesList = document.getElementById('prices-list');
+const shippingPricesList = document.getElementById('shipping-prices-list');
 const availabilityProductsList = document.getElementById('availability-products-list');
 const availabilityFillingsList = document.getElementById('availability-fillings-list');
 
@@ -247,6 +248,39 @@ function renderPrecios(precios) {
                 </details>
             `;
         }).join('');
+}
+
+function renderPreciosEnvio(envios) {
+    if (!shippingPricesList) return;
+
+    if (!Array.isArray(envios) || envios.length === 0) {
+        shippingPricesList.innerHTML = '<p class="helper-text">No hay zonas de envio configuradas.</p>';
+        return;
+    }
+
+    shippingPricesList.innerHTML = envios.map((item) => {
+        const zona = String(item?.zona || 'Zona');
+        const precio = Number(item?.precio || 0);
+        const encodedZona = encodeURIComponent(zona);
+
+        return `
+            <div class="price-row">
+                <div class="price-name">${escapeHtml(zona)}</div>
+                <div class="price-controls">
+                    <input
+                        type="number"
+                        min="1"
+                        step="1"
+                        class="price-input shipping-price-input"
+                        data-zona="${encodedZona}"
+                        value="${Math.max(1, Math.round(precio))}"
+                    >
+                    <span class="price-preview">${formatPriceARS(precio)}</span>
+                    <button type="button" class="btn btn-small btn-primary btn-save-shipping-price" data-zona="${encodedZona}">Guardar</button>
+                </div>
+            </div>
+        `;
+    }).join('');
 }
 
 function renderDisponibilidadProductos(productos) {
@@ -481,6 +515,7 @@ async function cargarPedidos() {
 async function cargarPrecios() {
     const data = await fetchAdmin('/api/admin/catalogo');
     renderPrecios(data.precios || []);
+    renderPreciosEnvio(data.envios || []);
     renderDisponibilidadProductos(data.productos || []);
     renderDisponibilidadRellenos(data.rellenos || []);
 }
@@ -833,6 +868,51 @@ if (pricesList) {
         const target = event.target;
         if (!(target instanceof HTMLInputElement)) return;
         if (!target.classList.contains('price-input')) return;
+
+        const row = target.closest('.price-row');
+        const preview = row ? row.querySelector('.price-preview') : null;
+        if (!preview) return;
+
+        const value = Number(target.value);
+        preview.textContent = Number.isFinite(value) && value > 0 ? formatPriceARS(Math.round(value)) : '$-';
+    });
+}
+
+if (shippingPricesList) {
+    shippingPricesList.addEventListener('click', async (event) => {
+        const target = event.target;
+        if (!(target instanceof HTMLElement)) return;
+        if (!target.classList.contains('btn-save-shipping-price')) return;
+
+        const encodedZona = String(target.dataset.zona || '');
+        if (!encodedZona) return;
+
+        const input = shippingPricesList.querySelector(`.shipping-price-input[data-zona="${encodedZona}"]`);
+        if (!(input instanceof HTMLInputElement)) return;
+
+        const nuevoPrecio = Number(input.value);
+        if (!Number.isFinite(nuevoPrecio) || nuevoPrecio <= 0) {
+            statusFeedback.textContent = 'Ingresa un precio de envio valido mayor a 0.';
+            return;
+        }
+
+        statusFeedback.textContent = 'Actualizando precio de envio...';
+        try {
+            await fetchAdmin(`/api/admin/envios/${encodedZona}`, {
+                method: 'PUT',
+                body: JSON.stringify({ precio: Math.round(nuevoPrecio) })
+            });
+            await cargarPrecios();
+            statusFeedback.textContent = 'Precio de envio actualizado correctamente.';
+        } catch (error) {
+            statusFeedback.textContent = `No se pudo actualizar el precio de envio: ${error.message}`;
+        }
+    });
+
+    shippingPricesList.addEventListener('input', (event) => {
+        const target = event.target;
+        if (!(target instanceof HTMLInputElement)) return;
+        if (!target.classList.contains('shipping-price-input')) return;
 
         const row = target.closest('.price-row');
         const preview = row ? row.querySelector('.price-preview') : null;

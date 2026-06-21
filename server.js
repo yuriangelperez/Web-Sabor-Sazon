@@ -85,6 +85,12 @@ const PrecioProductoSchema = new mongoose.Schema({
     actualizadoEn: { type: Date, default: Date.now }
 });
 const PrecioProducto = mongoose.model('PrecioProducto', PrecioProductoSchema);
+const PrecioEnvioSchema = new mongoose.Schema({
+    zona: { type: String, required: true, unique: true },
+    precio: { type: Number, required: true },
+    actualizadoEn: { type: Date, default: Date.now }
+});
+const PrecioEnvio = mongoose.model('PrecioEnvio', PrecioEnvioSchema);
 const DisponibilidadSchema = new mongoose.Schema({
     tipo: { type: String, enum: ['producto', 'relleno'], required: true },
     nombre: { type: String, required: true },
@@ -147,6 +153,39 @@ function obtenerRellenosBase() {
     }
 }
 
+function obtenerZonasEnvioBase() {
+    try {
+        const indexPath = path.join(__dirname, 'index.html');
+        const contenido = fs.readFileSync(indexPath, 'utf8');
+        const matchSelect = contenido.match(/<select\s+id="zona-entrega"[^>]*>([\s\S]*?)<\/select>/i);
+        const bloque = matchSelect ? matchSelect[1] : contenido;
+        const regex = /<option\s+value="([^"]+)"[^>]*>([^<]+)<\/option>/gi;
+        const zonas = [];
+        const vistos = new Set();
+
+        let match;
+        while ((match = regex.exec(bloque)) !== null) {
+            const rawValue = String(match[1] || '').trim();
+            const texto = String(match[2] || '').trim();
+
+            if (!rawValue || rawValue.toLowerCase() === 'no-delivery') continue;
+
+            const precio = Number(rawValue);
+            if (!Number.isFinite(precio) || precio <= 0) continue;
+
+            const zona = texto.replace(/\s*\(\+\$?[^)]*\)\s*/i, '').trim();
+            if (!zona || vistos.has(zona)) continue;
+
+            vistos.add(zona);
+            zonas.push({ zona, precio: Math.round(precio) });
+        }
+
+        return zonas;
+    } catch {
+        return [];
+    }
+}
+
 async function obtenerCatalogoPreciosFinal() {
     const base = obtenerCatalogoPreciosBase();
     const baseMap = new Map(base.map((item) => [item.producto, item.precio]));
@@ -172,6 +211,24 @@ async function obtenerCatalogoPreciosFinal() {
     });
 
     return catalogo;
+}
+
+async function obtenerCatalogoEnviosFinal() {
+    const base = obtenerZonasEnvioBase();
+    const baseSet = new Set(base.map((item) => item.zona));
+    const baseMap = new Map(base.map((item) => [item.zona, item.precio]));
+    const overrides = await PrecioEnvio.find({}).lean();
+
+    overrides.forEach((item) => {
+        if (!item?.zona || typeof item?.precio !== 'number') return;
+        if (!baseSet.has(item.zona)) return;
+        baseMap.set(item.zona, item.precio);
+    });
+
+    return base.map((item) => ({
+        zona: item.zona,
+        precio: baseMap.get(item.zona)
+    }));
 }
 
 async function obtenerCatalogoDisponibilidad() {
@@ -451,12 +508,30 @@ app.get('/api/precios', async (req, res) => {
     }
 });
 
+app.get('/api/envios', async (req, res) => {
+    try {
+        const envios = await obtenerCatalogoEnviosFinal();
+        res.status(200).json({ success: true, envios });
+    } catch {
+        res.status(500).json({ success: false, message: 'No se pudieron obtener los precios de envio' });
+    }
+});
+
 app.get('/api/admin/precios', authAdmin, async (req, res) => {
     try {
         const precios = await obtenerCatalogoPreciosFinal();
         res.status(200).json({ success: true, precios });
     } catch {
         res.status(500).json({ success: false, message: 'No se pudieron obtener los precios' });
+    }
+});
+
+app.get('/api/admin/envios', authAdmin, async (req, res) => {
+    try {
+        const envios = await obtenerCatalogoEnviosFinal();
+        res.status(200).json({ success: true, envios });
+    } catch {
+        res.status(500).json({ success: false, message: 'No se pudieron obtener los precios de envio' });
     }
 });
 
@@ -472,8 +547,9 @@ app.get('/api/disponibilidad', async (req, res) => {
 app.get('/api/admin/catalogo', authAdmin, async (req, res) => {
     try {
         const precios = await obtenerCatalogoPreciosFinal();
+        const envios = await obtenerCatalogoEnviosFinal();
         const disponibilidad = await obtenerCatalogoDisponibilidad();
-        res.status(200).json({ success: true, precios, ...disponibilidad });
+        res.status(200).json({ success: true, precios, envios, ...disponibilidad });
     } catch {
         res.status(500).json({ success: false, message: 'No se pudo obtener el catalogo' });
     }
@@ -512,6 +588,42 @@ app.put('/api/admin/precios/:producto', authAdmin, async (req, res) => {
         });
     } catch {
         return res.status(500).json({ success: false, message: 'No se pudo actualizar el precio del producto' });
+    }
+});
+
+app.put('/api/admin/envios/:zona', authAdmin, async (req, res) => {
+    try {
+        const zona = decodeURIComponent(String(req.params.zona || '')).trim();
+        const precio = Number(req.body?.precio);
+
+        if (!zona) {
+            return res.status(400).json({ success: false, message: 'Zona invalida' });
+        }
+
+        if (!Number.isFinite(precio) || precio <= 0) {
+            return res.status(400).json({ success: false, message: 'El precio debe ser un numero mayor a 0' });
+        }
+
+        const zonasBase = obtenerZonasEnvioBase();
+        const existeEnBase = zonasBase.some((item) => item.zona === zona);
+        if (!existeEnBase) {
+            return res.status(404).json({ success: false, message: 'Zona no encontrada en el catalogo' });
+        }
+
+        await PrecioEnvio.findOneAndUpdate(
+            { zona },
+            { $set: { zona, precio: Math.round(precio), actualizadoEn: new Date() } },
+            { upsert: true, new: true }
+        );
+
+        return res.status(200).json({
+            success: true,
+            message: `Precio de envio actualizado para ${zona}`,
+            zona,
+            precio: Math.round(precio)
+        });
+    } catch {
+        return res.status(500).json({ success: false, message: 'No se pudo actualizar el precio de envio' });
     }
 });
 
