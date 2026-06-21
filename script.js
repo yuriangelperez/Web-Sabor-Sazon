@@ -720,11 +720,11 @@ document.addEventListener('DOMContentLoaded', () => {
                     if (descuento > 0) mensajeWA += `• *Descuento (5% Off):* -$${descuento.toLocaleString('es-AR')}\n`;
 
                     if (metodoPago === 'efectivo') {
-                        mensajeWA += `\n*Total a Pagar:* $${totalGeneral.toLocaleString('es-AR')}\n\n¡Abono al retirar!`;
+                        mensajeWA += `\n*Total a Pagar:* $${totalGeneral.toLocaleString('es-AR')}\n\n¡Abono en efectivo al retirar!`;
                     } else if (metodoPago === 'transferencia') {
-                        mensajeWA += `\n*Total a Transferir:* $${totalGeneral.toLocaleString('es-AR')}\n\n¡Solicito alias bancario!`;
+                        mensajeWA += `\n*Total a Transferir:* $${totalGeneral.toLocaleString('es-AR')}\n\n¡Pagué por transferencia, te paso el comprobante!`;
                     } else {
-                        mensajeWA += `\n*Total Pagado:* $${totalGeneral.toLocaleString('es-AR')}\n\n¡Pago realizado por Mercado Pago!`;
+                        mensajeWA += `\n*Total Pagado:* $${totalGeneral.toLocaleString('es-AR')}\n\n¡Pago realizado el pago por Mercado Pago!`;
                     }
 
                     const urlWhatsApp = `https://wa.me/541136313508?text=${encodeURIComponent(mensajeWA)}`;
