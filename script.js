@@ -1,4 +1,6 @@
 document.addEventListener('DOMContentLoaded', () => {
+    const API_BASE = 'https://web-sabor-sazon.onrender.com';
+
     // --- NUEVO: DETECTAR SI EL CLIENTE VUELVE DE PAGAR ---
     const urlParams = new URLSearchParams(window.location.search);
     const status = urlParams.get('status');
@@ -22,10 +24,63 @@ document.addEventListener('DOMContentLoaded', () => {
     const carritoItemsDiv = document.getElementById('carrito-items');
     const carritoTotalSpan = document.getElementById('carrito-total');
     const formularioPedido = document.getElementById('form-pedido');
+    const bannerEstado = document.getElementById('local-estado-banner');
+    const botonesAgregar = Array.from(document.querySelectorAll('.btn-agregar'));
+    let localAbierto = true;
+
+    function aplicarEstadoLocalEnUI(abierto) {
+        const btnSubmit = formularioPedido ? formularioPedido.querySelector('button[type="submit"]') : null;
+        localAbierto = abierto;
+
+        botonesAgregar.forEach((btn) => {
+            btn.disabled = !abierto;
+            btn.style.opacity = abierto ? '1' : '0.55';
+            if (!abierto) {
+                btn.dataset.textoOriginal = btn.dataset.textoOriginal || btn.innerText;
+                btn.innerText = 'Local cerrado';
+            } else if (btn.dataset.textoOriginal) {
+                btn.innerText = btn.dataset.textoOriginal;
+            }
+        });
+
+        if (btnSubmit) {
+            btnSubmit.disabled = !abierto;
+            btnSubmit.innerText = abierto ? 'Confirmar y Pagar' : 'Local cerrado';
+            btnSubmit.style.backgroundColor = abierto ? '' : '#555';
+        }
+
+        if (bannerEstado) {
+            bannerEstado.textContent = abierto
+                ? ''
+                : 'El local se encuentra cerrado por el momento. Volve mas tarde para realizar pedidos.';
+            bannerEstado.classList.toggle('hidden', abierto);
+        }
+    }
+
+    async function consultarEstadoLocal() {
+        try {
+            const res = await fetch(`${API_BASE}/api/estado-local`);
+            const data = await res.json();
+            if (data.success) {
+                aplicarEstadoLocalEnUI(Boolean(data.abierto));
+                return Boolean(data.abierto);
+            }
+        } catch (error) {
+            console.error('No se pudo consultar estado del local:', error);
+        }
+        return localAbierto;
+    }
+
+    consultarEstadoLocal();
 
     // 1. MANEJADOR DE CLICS (Agregar productos y soporte para botones visuales de entrega/pago)
     document.addEventListener('click', (e) => {
         if (e.target && e.target.classList.contains('btn-agregar')) {
+            if (!localAbierto) {
+                alert('El local está cerrado por el momento. Volvé a intentar más tarde.');
+                return;
+            }
+
             const boton = e.target;
             const producto = boton.getAttribute('data-producto');
             const precio = parseInt(boton.getAttribute('data-precio'));
@@ -325,6 +380,12 @@ document.addEventListener('DOMContentLoaded', () => {
         formularioPedido.addEventListener('submit', async (e) => {
             e.preventDefault();
 
+            const abiertoAhora = await consultarEstadoLocal();
+            if (!abiertoAhora) {
+                alert('El local está cerrado por el momento. No se pueden realizar pedidos.');
+                return;
+            }
+
             if (carrito.length === 0) {
                 alert('Por favor, agrega al menos un producto al carrito antes de finalizar.');
                 return;
@@ -361,13 +422,19 @@ document.addEventListener('DOMContentLoaded', () => {
             };
 
             try {
-                const respuesta = await fetch('https://web-sabor-sazon.onrender.com/api/pedidos', {
+                const respuesta = await fetch(`${API_BASE}/api/pedidos`, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify(datosPedido)
                 });
 
                 const resultado = await respuesta.json();
+
+                if (!respuesta.ok && resultado.code === 'LOCAL_CERRADO') {
+                    aplicarEstadoLocalEnUI(false);
+                    alert('El local se encuentra cerrado. No se aceptan pedidos en este momento.');
+                    return;
+                }
 
                 if (resultado.success) {
                     let mensajeWA = `*NUEVO PEDIDO - SABOR & SAZÓN*\n`;

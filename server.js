@@ -1,6 +1,8 @@
 const express = require('express');
 const mongoose = require('mongoose');
 const cors = require('cors');
+const crypto = require('crypto');
+require('dotenv').config();
 // 1. Importamos Mercado Pago
 const { MercadoPagoConfig, Preference } = require('mercadopago');
 
@@ -16,10 +18,15 @@ const client = new MercadoPagoConfig({
 // Middleware
 app.use(cors({
     origin: '*',
-    methods: ['GET', 'POST'],
-    allowedHeaders: ['Content-Type']
+    methods: ['GET', 'POST', 'PUT', 'PATCH'],
+    allowedHeaders: ['Content-Type', 'Authorization']
 }));
 app.use(express.json());
+
+const ADMIN_USER = process.env.ADMIN_USER || 'admin';
+const ADMIN_PASS = process.env.ADMIN_PASS || 'sabor123';
+const ADMIN_TOKEN_TTL_MS = 1000 * 60 * 60 * 12;
+const adminTokens = new Map();
 
 // Conexión a MongoDB Atlas
 mongoose.connect('mongodb+srv://yuriangelperezedu_db_user:vVs9x7ZbJ2znTaaQ@cluster0.qfrevux.mongodb.net/saborysazon?appName=Cluster0')
@@ -39,13 +46,174 @@ const PedidoSchema = new mongoose.Schema({
 });
 const Pedido = mongoose.model('Pedido', PedidoSchema);
 
+const AdminUserSchema = new mongoose.Schema({
+    username: { type: String, required: true, unique: true },
+    passwordHash: { type: String, required: true },
+    salt: { type: String, required: true },
+    creadoEn: { type: Date, default: Date.now }
+});
+const AdminUser = mongoose.model('AdminUser', AdminUserSchema);
+
+const EstadoLocalSchema = new mongoose.Schema({
+    key: { type: String, unique: true },
+    abierto: { type: Boolean, default: true },
+    actualizadoEn: { type: Date, default: Date.now }
+});
+const EstadoLocal = mongoose.model('EstadoLocal', EstadoLocalSchema);
+
+async function obtenerEstadoLocal() {
+    let estado = await EstadoLocal.findOne({ key: 'main' });
+    if (!estado) {
+        estado = await EstadoLocal.create({ key: 'main', abierto: true });
+    }
+    return estado;
+}
+
+function authAdmin(req, res, next) {
+    const authHeader = req.headers.authorization || '';
+    const token = authHeader.startsWith('Bearer ') ? authHeader.slice(7) : null;
+    if (!token) {
+        return res.status(401).json({ success: false, message: 'No autorizado' });
+    }
+
+    const expiration = adminTokens.get(token);
+    if (!expiration || Date.now() > expiration) {
+        if (expiration) adminTokens.delete(token);
+        return res.status(401).json({ success: false, message: 'Sesión vencida o inválida' });
+    }
+
+    next();
+}
+
+function normalizarUsuario(username = '') {
+    return String(username).trim().toLowerCase();
+}
+
+function generarHashPassword(password, salt = null) {
+    const saltFinal = salt || crypto.randomBytes(16).toString('hex');
+    const hash = crypto.scryptSync(password, saltFinal, 64).toString('hex');
+    return { salt: saltFinal, hash };
+}
+
+function validarPassword(password, hashEsperado, salt) {
+    const { hash } = generarHashPassword(password, salt);
+    const a = Buffer.from(hash, 'hex');
+    const b = Buffer.from(hashEsperado, 'hex');
+    if (a.length !== b.length) return false;
+    return crypto.timingSafeEqual(a, b);
+}
+
 app.get('/', (req, res) => {
     res.status(200).json({ success: true, message: "¡Servidor de Sabor & Sazón en línea!" });
+});
+
+app.post('/api/admin/login', async (req, res) => {
+    const { username, password } = req.body || {};
+    const usernameNorm = normalizarUsuario(username);
+
+    try {
+        const user = await AdminUser.findOne({ username: usernameNorm });
+        let credencialesValidas = false;
+
+        if (user) {
+            credencialesValidas = validarPassword(password || '', user.passwordHash, user.salt);
+        } else {
+            credencialesValidas = username === ADMIN_USER && password === ADMIN_PASS;
+        }
+
+        if (!credencialesValidas) {
+            return res.status(401).json({ success: false, message: 'Credenciales inválidas' });
+        }
+
+        const token = crypto.randomBytes(32).toString('hex');
+        adminTokens.set(token, Date.now() + ADMIN_TOKEN_TTL_MS);
+
+        return res.status(200).json({ success: true, token });
+    } catch (error) {
+        return res.status(500).json({ success: false, message: 'No se pudo iniciar sesión' });
+    }
+});
+
+app.post('/api/admin/usuarios', authAdmin, async (req, res) => {
+    try {
+        const usernameNorm = normalizarUsuario(req.body?.username);
+        const password = String(req.body?.password || '');
+
+        if (!/^[a-z0-9._-]{4,30}$/.test(usernameNorm)) {
+            return res.status(400).json({
+                success: false,
+                message: 'Usuario inválido. Usa 4-30 caracteres: letras, números, punto, guion o guion bajo.'
+            });
+        }
+
+        if (password.length < 6) {
+            return res.status(400).json({ success: false, message: 'La contraseña debe tener al menos 6 caracteres.' });
+        }
+
+        const existe = await AdminUser.findOne({ username: usernameNorm });
+        if (existe) {
+            return res.status(409).json({ success: false, message: 'Ese usuario ya existe.' });
+        }
+
+        const { salt, hash } = generarHashPassword(password);
+        await AdminUser.create({ username: usernameNorm, passwordHash: hash, salt });
+
+        return res.status(201).json({ success: true, message: 'Usuario admin creado correctamente.' });
+    } catch (error) {
+        return res.status(500).json({ success: false, message: 'No se pudo crear el usuario admin.' });
+    }
+});
+
+app.get('/api/estado-local', async (req, res) => {
+    try {
+        const estado = await obtenerEstadoLocal();
+        res.status(200).json({ success: true, abierto: estado.abierto, actualizadoEn: estado.actualizadoEn });
+    } catch (error) {
+        res.status(500).json({ success: false, message: 'No se pudo obtener el estado del local' });
+    }
+});
+
+app.put('/api/admin/estado-local', authAdmin, async (req, res) => {
+    try {
+        const { abierto } = req.body || {};
+        if (typeof abierto !== 'boolean') {
+            return res.status(400).json({ success: false, message: 'El campo abierto debe ser booleano' });
+        }
+
+        const estado = await EstadoLocal.findOneAndUpdate(
+            { key: 'main' },
+            { $set: { abierto, actualizadoEn: new Date() } },
+            { new: true, upsert: true }
+        );
+
+        res.status(200).json({ success: true, abierto: estado.abierto, actualizadoEn: estado.actualizadoEn });
+    } catch (error) {
+        res.status(500).json({ success: false, message: 'No se pudo actualizar el estado del local' });
+    }
+});
+
+app.get('/api/admin/pedidos', authAdmin, async (req, res) => {
+    try {
+        const limit = Math.min(parseInt(req.query.limit, 10) || 100, 300);
+        const pedidos = await Pedido.find().sort({ fecha: -1 }).limit(limit);
+        res.status(200).json({ success: true, pedidos });
+    } catch (error) {
+        res.status(500).json({ success: false, message: 'No se pudieron obtener los pedidos' });
+    }
 });
 
 // 3. RUTA POST ACTUALIZADA: Guarda el pedido y genera el link de Mercado Pago
 app.post('/api/pedidos', async (req, res) => {
     try {
+        const estadoLocal = await obtenerEstadoLocal();
+        if (!estadoLocal.abierto) {
+            return res.status(403).json({
+                success: false,
+                code: 'LOCAL_CERRADO',
+                message: 'El local se encuentra cerrado. No se aceptan pedidos en este momento.'
+            });
+        }
+
         // Guardamos primero en la base de datos
         const nuevoPedido = new Pedido(req.body);
         await nuevoPedido.save();
