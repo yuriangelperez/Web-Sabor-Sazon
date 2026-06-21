@@ -318,7 +318,8 @@ input[type='number'] {
 
 .price-category-list {
     display: grid;
-    gap: 6px;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 8px;
     padding: 0 8px 8px;
 }
 
@@ -335,33 +336,47 @@ input[type='number'] {
     font-size: 13px;
     color: var(--text);
     font-weight: 600;
+    line-height: 1.25;
+    min-height: 32px;
 }
 
 .price-controls {
     display: grid;
-    grid-template-columns: minmax(120px, 180px) minmax(80px, auto) auto;
-    gap: 8px;
+    grid-template-columns: 1fr auto;
+    grid-template-areas:
+        'input preview'
+        'button button';
+    gap: 6px;
     align-items: center;
 }
 
 .price-input {
     padding: 7px 9px;
+    grid-area: input;
 }
 
 .price-preview {
     color: var(--accent);
     font-weight: 700;
     font-size: 13px;
+    grid-area: preview;
+    justify-self: end;
+}
+
+.btn-save-price {
+    grid-area: button;
+    width: 100%;
 }
 
 .availability-list {
     display: grid;
-    gap: 6px;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 8px;
 }
 
 .availability-row {
-    display: flex;
-    justify-content: space-between;
+    display: grid;
+    grid-template-columns: 1fr auto;
     align-items: center;
     gap: 10px;
     background: #12121a;
@@ -390,5 +405,21 @@ input[type='number'] {
 
     .price-controls {
         grid-template-columns: 1fr;
+        grid-template-areas:
+            'input'
+            'preview'
+            'button';
+    }
+
+    .price-category-list,
+    .availability-list {
+        grid-template-columns: 1fr;
+    }
+}
+
+@media (max-width: 1100px) {
+    .price-category-list,
+    .availability-list {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
     }
 }
