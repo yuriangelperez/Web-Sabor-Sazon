@@ -14,7 +14,7 @@ const PORT = process.env.PORT || 5000;
 // 2. Configurar Mercado Pago con tu Access Token
 // REEMPLAZA ESTO CON TU ACCESS TOKEN REAL DE PRODUCCIÓN o usa una variable de entorno (.env)
 const client = new MercadoPagoConfig({ 
-    accessToken: 'APP_USR-4141284821887377-061814-56c9600e7a237642acc3dd8a1e46fba4-751607359' 
+    accessToken: 'APP_USR-7185940169822450-062112-a8d5f05a8faa53d34438712136cc4989-3486812259' 
 });
 
 // Middleware
