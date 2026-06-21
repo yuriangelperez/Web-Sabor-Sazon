@@ -36,7 +36,16 @@ mongoose.connect('mongodb+srv://yuriangelperezedu_db_user:vVs9x7ZbJ2znTaaQ@clust
 // Esquema de Pedido
 const PedidoSchema = new mongoose.Schema({
     cliente: { nombre: String, telefono: String, direccion: String },
-    items: [{ producto: String, cantidad: Number, precio: Number }],
+    items: [{
+        producto: String,
+        cantidad: Number,
+        precio: Number,
+        gustos: [{
+            componente: String,
+            sabor: String
+        }],
+        tipoArepa: String
+    }],
     tipoEntrega: { type: String, default: 'retiro' },
     costoEnvio: { type: Number, default: 0 },
     total: Number,

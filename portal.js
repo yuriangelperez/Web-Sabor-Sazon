@@ -102,19 +102,22 @@ function renderPedidos(pedidos) {
     ordersList.innerHTML = pedidos.map((pedido) => {
         const items = (pedido.items || []).map((item) => {
             const gustos = Array.isArray(item?.gustos) ? item.gustos : [];
-            const rellenos = gustos
-                .map((gusto) => `${gusto?.componente || 'Item'}: ${gusto?.sabor || '-'}`)
-                .join(' | ');
             const coccionArepa = detectarCoccionArepa(item);
 
-            const extras = [];
-            if (rellenos) extras.push(`Rellenos: ${rellenos}`);
-            if (coccionArepa) extras.push(`Arepa: ${coccionArepa}`);
+            const gustosHtml = gustos.map((gusto) => {
+                const componente = gusto?.componente || 'Item';
+                const sabor = gusto?.sabor || '-';
+                return `<div class="order-item-detail">└ ${escapeHtml(componente)}: ${escapeHtml(sabor)}</div>`;
+            }).join('');
+
+            const coccionHtml = coccionArepa
+                ? `<div class="order-item-detail">└ Tipo de arepa: ${escapeHtml(coccionArepa)}</div>`
+                : '';
 
             return `
                 <div class="order-item-line">
                     <span>${escapeHtml(`${item?.cantidad || 0}x ${item?.producto || 'Producto'}`)}</span>
-                    ${extras.length ? `<br><small>${escapeHtml(extras.join(' • '))}</small>` : ''}
+                    ${gustosHtml}${coccionHtml}
                 </div>
             `;
         }).join('');
