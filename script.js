@@ -33,6 +33,38 @@ document.addEventListener('DOMContentLoaded', () => {
         return `$${Number(value || 0).toLocaleString('es-AR')}`;
     }
 
+    function normalizarTexto(value) {
+        return String(value || '')
+            .normalize('NFD')
+            .replace(/[\u0300-\u036f]/g, '')
+            .trim()
+            .toLowerCase();
+    }
+
+    function calcularAdicionalCombo(producto, gustos = []) {
+        if (!normalizarTexto(producto).startsWith('combo')) return 0;
+
+        return (Array.isArray(gustos) ? gustos : []).reduce((total, gusto) => {
+            const componente = normalizarTexto(gusto?.componente || '');
+            const sabor = normalizarTexto(gusto?.sabor || '');
+
+            if (!sabor) return total;
+            if (componente.includes('tipo')) return total;
+
+            if (componente.includes('arepa')) {
+                if (sabor === 'catira' || sabor === 'pelua') return total + 400;
+                if (sabor === 'pabellon') return total + 800;
+            }
+
+            if (componente.includes('empanada')) {
+                if (sabor === 'catira' || sabor === 'pelua') return total + 200;
+                if (sabor === 'pabellon') return total + 400;
+            }
+
+            return total;
+        }, 0);
+    }
+
     function aplicarPreciosEnvioEnCheckout(envios = []) {
         const selectZona = document.getElementById('zona-entrega');
         if (!(selectZona instanceof HTMLSelectElement)) return;
@@ -368,6 +400,9 @@ document.addEventListener('DOMContentLoaded', () => {
                 });
             }
 
+            const adicionalCombo = calcularAdicionalCombo(producto, gustosElegidos);
+            const precioFinal = (Number(precio) || 0) + adicionalCombo;
+
             const itemExistente = carrito.find(item =>
                 item.producto === producto &&
                 JSON.stringify(item.gustos) === JSON.stringify(gustosElegidos)
@@ -376,7 +411,7 @@ document.addEventListener('DOMContentLoaded', () => {
             if (itemExistente) {
                 itemExistente.cantidad += 1;
             } else {
-                carrito.push({ producto, cantidad: 1, precio, gustos: gustosElegidos });
+                carrito.push({ producto, cantidad: 1, precio: precioFinal, gustos: gustosElegidos });
             }
             
             // Cambiar el botón a "Agregado" temporalmente
