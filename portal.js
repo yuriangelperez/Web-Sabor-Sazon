@@ -35,6 +35,11 @@ function setAuthenticatedUI(isAuthenticated) {
     adminPanel.classList.toggle('hidden', !isAuthenticated);
 }
 
+function tokenPareceLegacy(token) {
+    // Tokens viejos eran hex sin separador; el token nuevo tiene formato payload.firma
+    return token && !token.includes('.');
+}
+
 function updateEstadoLabel() {
     estadoLabel.textContent = estadoInput.checked ? 'Abierto' : 'Cerrado';
 }
@@ -211,6 +216,14 @@ logoutBtn.addEventListener('click', () => {
 
 async function bootstrap() {
     const token = getToken();
+
+    if (tokenPareceLegacy(token)) {
+        clearToken();
+        setAuthenticatedUI(false);
+        loginError.textContent = 'Tu sesión anterior venció por una actualización. Iniciá sesión nuevamente.';
+        return;
+    }
+
     if (!token) {
         setAuthenticatedUI(false);
         return;
@@ -229,6 +242,7 @@ async function bootstrap() {
     } catch (error) {
         clearToken();
         setAuthenticatedUI(false);
+        loginError.textContent = 'Sesión expirada. Iniciá sesión nuevamente.';
     }
 }
 

@@ -95,7 +95,7 @@ input[type='password'] {
 }
 
 .hidden {
-    display: none;
+    display: none !important;
 }
 
 .panel {
