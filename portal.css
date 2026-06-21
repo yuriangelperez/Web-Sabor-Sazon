@@ -385,6 +385,17 @@ input[type='number'] {
     padding: 8px 10px;
     font-size: 13px;
     color: var(--text);
+    transition: border-color 0.2s ease, background-color 0.2s ease;
+}
+
+.availability-row.is-enabled {
+    border-color: rgba(34, 197, 94, 0.45);
+    background: rgba(34, 197, 94, 0.12);
+}
+
+.availability-row.is-disabled {
+    border-color: rgba(239, 68, 68, 0.5);
+    background: rgba(239, 68, 68, 0.14);
 }
 
 .availability-row input[type='checkbox'] {

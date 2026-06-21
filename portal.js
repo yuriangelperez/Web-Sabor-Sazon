@@ -240,7 +240,7 @@ function renderDisponibilidadProductos(productos) {
         const habilitado = Boolean(item?.habilitado);
         const encoded = encodeURIComponent(nombre);
         return `
-            <label class="availability-row">
+            <label class="availability-row ${habilitado ? 'is-enabled' : 'is-disabled'}">
                 <span>${escapeHtml(nombre)}</span>
                 <input type="checkbox" class="availability-toggle" data-tipo="producto" data-nombre="${encoded}" ${habilitado ? 'checked' : ''}>
             </label>
@@ -261,7 +261,7 @@ function renderDisponibilidadRellenos(rellenos) {
         const habilitado = Boolean(item?.habilitado);
         const encoded = encodeURIComponent(nombre);
         return `
-            <label class="availability-row">
+            <label class="availability-row ${habilitado ? 'is-enabled' : 'is-disabled'}">
                 <span>${escapeHtml(nombre)}</span>
                 <input type="checkbox" class="availability-toggle" data-tipo="relleno" data-nombre="${encoded}" ${habilitado ? 'checked' : ''}>
             </label>
@@ -819,6 +819,11 @@ function registrarEventosDisponibilidad(lista, tipo) {
 
         try {
             await actualizarDisponibilidad(tipo, encodedNombre, habilitado);
+            const row = target.closest('.availability-row');
+            if (row) {
+                row.classList.toggle('is-enabled', habilitado);
+                row.classList.toggle('is-disabled', !habilitado);
+            }
             statusFeedback.textContent = 'Disponibilidad actualizada.';
         } catch (error) {
             target.checked = !habilitado;
