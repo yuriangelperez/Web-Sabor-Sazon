@@ -320,21 +320,53 @@ function renderDisponibilidadProductos(productos) {
     if (!availabilityProductsList) return;
 
     if (!Array.isArray(productos) || !productos.length) {
-        availabilityProductsList.innerHTML = '<p class="helper-text">No hay productos.</p>';
+        availabilityProductsList.innerHTML =
+            '<p class="helper-text">No hay productos.</p>';
         return;
     }
 
-    availabilityProductsList.innerHTML = productos.map((item) => {
-        const nombre = String(item?.nombre || 'Producto');
-        const habilitado = Boolean(item?.habilitado);
-        const encoded = encodeURIComponent(nombre);
-        return `
-            <label class="availability-row ${habilitado ? 'is-enabled' : 'is-disabled'}">
-                <span>${escapeHtml(nombre)}</span>
-                <input type="checkbox" class="availability-toggle" data-tipo="producto" data-nombre="${encoded}" ${habilitado ? 'checked' : ''}>
-            </label>
-        `;
-    }).join('');
+    const categorias = ['Combos', 'Arepas', 'Empanadas', 'Tequeños', 'Otros'];
+    const grupos = new Map(categorias.map(cat => [cat, []]));
+
+    productos.forEach((item) => {
+        const categoria = obtenerCategoriaProducto(item.nombre);
+        grupos.get(categoria).push(item);
+    });
+
+    availabilityProductsList.innerHTML = categorias
+        .filter(cat => grupos.get(cat).length)
+        .map((categoria) => `
+            <details class="price-category" open>
+                <summary>
+                    <span>${categoria}</span>
+                    <span class="price-category-count">
+                        ${grupos.get(categoria).length}
+                    </span>
+                </summary>
+
+                <div class="availability-list">
+                    ${grupos.get(categoria).map((item) => {
+            const nombre = String(item?.nombre || 'Producto');
+            const habilitado = Boolean(item?.habilitado);
+            const encoded = encodeURIComponent(nombre);
+
+            return `
+                            <label class="availability-row ${habilitado ? 'is-enabled' : 'is-disabled'}">
+                                <span>${escapeHtml(nombre)}</span>
+                                <input
+                                    type="checkbox"
+                                    class="availability-toggle"
+                                    data-tipo="producto"
+                                    data-nombre="${encoded}"
+                                    ${habilitado ? 'checked' : ''}
+                                >
+                            </label>
+                        `;
+        }).join('')}
+                </div>
+            </details>
+        `)
+        .join('');
 }
 
 function renderDisponibilidadRellenos(rellenos) {
@@ -376,7 +408,7 @@ function setupAudioUnlock() {
         }
 
         if (audioContext && audioContext.state === 'suspended') {
-            audioContext.resume().catch(() => {});
+            audioContext.resume().catch(() => { });
         }
     };
 
@@ -393,7 +425,7 @@ function sonarBeepRespaldo() {
         }
 
         if (audioContext.state === 'suspended') {
-            audioContext.resume().catch(() => {});
+            audioContext.resume().catch(() => { });
         }
 
         const ahora = audioContext.currentTime;
