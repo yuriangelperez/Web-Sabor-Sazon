@@ -293,7 +293,7 @@ body {
 .cart-sidebar {
     position: fixed;
     top: 0;
-    right: -350px; 
+    right: 0;
     width: 540px;
     height: 100vh;
     background-color: rgba(20, 20, 22, 0.98);
@@ -301,12 +301,13 @@ body {
     z-index: 1050; 
     display: flex;
     flex-direction: column;
-    transition: right 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+    transform: translateX(100%);
+    transition: transform 0.4s cubic-bezier(0.4, 0, 0.2, 1);
     border-left: 2px solid rgba(255, 255, 255, 0.05);
 }
 
 .cart-sidebar.open {
-    right: 0;
+    transform: translateX(0);
 }
 
 .cart-sidebar-header {
@@ -1072,7 +1073,7 @@ body {
 @media (max-width: 400px) {
     .cart-sidebar {
         width: 100%;
-        right: -100%;
+        right: 0;
     }
 }
 
