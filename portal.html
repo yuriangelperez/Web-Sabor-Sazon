@@ -32,6 +32,7 @@
             <header class="panel-header">
                 <h1>Panel del Local</h1>
                 <div class="header-actions">
+                    <button id="toggle-users-btn" class="btn">Usuarios</button>
                     <button id="refresh-btn" class="btn">Actualizar</button>
                     <button id="logout-btn" class="btn btn-danger">Salir</button>
                 </div>
@@ -50,7 +51,7 @@
                 <p id="status-feedback" class="helper-text" aria-live="polite"></p>
             </article>
 
-            <article class="status-card">
+            <article class="status-card hidden" id="users-card">
                 <h2>Crear Usuario Admin</h2>
                 <form id="create-user-form" class="login-form" autocomplete="off">
                     <label for="new-username">Nuevo usuario</label>
@@ -81,6 +82,8 @@
                     <button id="apply-filter-btn" class="btn">Filtrar</button>
                     <button id="clear-filter-btn" class="btn">Limpiar</button>
                     <button id="export-xlsx-btn" class="btn btn-primary">Exportar .xlsx</button>
+                    <button id="delete-filtered-btn" class="btn btn-danger">Borrar filtrados</button>
+                    <button id="delete-all-btn" class="btn btn-danger">Borrar todos</button>
                 </div>
                 <div id="orders-list" class="orders-list"></div>
             </article>

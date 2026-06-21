@@ -196,7 +196,7 @@ input[type='date'] {
 
 .orders-filters {
     display: grid;
-    grid-template-columns: repeat(5, minmax(120px, 1fr));
+    grid-template-columns: repeat(7, minmax(120px, 1fr));
     gap: 8px;
     align-items: end;
     margin-bottom: 12px;
@@ -224,6 +224,16 @@ input[type='date'] {
     gap: 12px;
     margin-bottom: 8px;
     flex-wrap: wrap;
+}
+
+.order-actions {
+    display: flex;
+    gap: 8px;
+}
+
+.btn-small {
+    padding: 6px 10px;
+    font-size: 12px;
 }
 
 .order-meta,

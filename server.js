@@ -18,7 +18,7 @@ const client = new MercadoPagoConfig({
 // Middleware
 app.use(cors({
     origin: '*',
-    methods: ['GET', 'POST', 'PUT', 'PATCH'],
+    methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE'],
     allowedHeaders: ['Content-Type', 'Authorization']
 }));
 app.use(express.json());
@@ -266,6 +266,60 @@ app.get('/api/admin/pedidos', authAdmin, async (req, res) => {
         res.status(200).json({ success: true, pedidos });
     } catch (error) {
         res.status(500).json({ success: false, message: 'No se pudieron obtener los pedidos' });
+    }
+});
+
+app.delete('/api/admin/pedidos/:id', authAdmin, async (req, res) => {
+    try {
+        const { id } = req.params;
+        const eliminado = await Pedido.findByIdAndDelete(id);
+
+        if (!eliminado) {
+            return res.status(404).json({ success: false, message: 'Pedido no encontrado.' });
+        }
+
+        return res.status(200).json({ success: true, message: 'Pedido eliminado correctamente.' });
+    } catch (error) {
+        return res.status(500).json({ success: false, message: 'No se pudo eliminar el pedido.' });
+    }
+});
+
+app.delete('/api/admin/pedidos', authAdmin, async (req, res) => {
+    try {
+        const { fechaDesde, fechaHasta, todos } = req.query;
+
+        const filtros = {};
+        if (todos !== 'true') {
+            if (!fechaDesde && !fechaHasta) {
+                return res.status(400).json({
+                    success: false,
+                    message: 'Para borrar pedidos debés indicar un rango de fechas o usar todos=true.'
+                });
+            }
+
+            filtros.fecha = {};
+            if (fechaDesde) {
+                const desde = new Date(fechaDesde);
+                if (!Number.isNaN(desde.getTime())) filtros.fecha.$gte = desde;
+            }
+            if (fechaHasta) {
+                const hasta = new Date(fechaHasta);
+                if (!Number.isNaN(hasta.getTime())) filtros.fecha.$lte = hasta;
+            }
+
+            if (Object.keys(filtros.fecha).length === 0) {
+                delete filtros.fecha;
+            }
+        }
+
+        const resultado = await Pedido.deleteMany(filtros);
+        return res.status(200).json({
+            success: true,
+            message: `Se eliminaron ${resultado.deletedCount} pedido(s).`,
+            deletedCount: resultado.deletedCount
+        });
+    } catch (error) {
+        return res.status(500).json({ success: false, message: 'No se pudieron borrar los pedidos.' });
     }
 });
 

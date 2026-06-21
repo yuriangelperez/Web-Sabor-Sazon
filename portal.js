@@ -12,6 +12,8 @@ const saveStatusBtn = document.getElementById('save-status-btn');
 const statusFeedback = document.getElementById('status-feedback');
 const createUserForm = document.getElementById('create-user-form');
 const createUserFeedback = document.getElementById('create-user-feedback');
+const usersCard = document.getElementById('users-card');
+const toggleUsersBtn = document.getElementById('toggle-users-btn');
 
 const refreshBtn = document.getElementById('refresh-btn');
 const logoutBtn = document.getElementById('logout-btn');
@@ -22,6 +24,8 @@ const filterDateTo = document.getElementById('filter-date-to');
 const applyFilterBtn = document.getElementById('apply-filter-btn');
 const clearFilterBtn = document.getElementById('clear-filter-btn');
 const exportXlsxBtn = document.getElementById('export-xlsx-btn');
+const deleteFilteredBtn = document.getElementById('delete-filtered-btn');
+const deleteAllBtn = document.getElementById('delete-all-btn');
 
 let pedidosActuales = [];
 
@@ -72,8 +76,13 @@ function renderPedidos(pedidos) {
         return `
             <article class="order-item">
                 <div class="order-top">
-                    <strong>#${pedido._id}</strong>
-                    <span>${formatDate(pedido.fecha)}</span>
+                    <div>
+                        <strong>#${pedido._id}</strong>
+                        <span>${formatDate(pedido.fecha)}</span>
+                    </div>
+                    <div class="order-actions">
+                        <button type="button" class="btn btn-danger btn-small btn-delete-order" data-id="${pedido._id}">Borrar</button>
+                    </div>
                 </div>
                 <div class="order-meta">
                     ${pedido.cliente?.nombre || 'Sin nombre'} | ${pedido.cliente?.telefono || 'Sin telefono'}
@@ -101,6 +110,17 @@ function construirQueryPedidos() {
     if (hasta) {
         params.set('fechaHasta', `${hasta}T23:59:59.999Z`);
     }
+
+    return params.toString();
+}
+
+function construirQueryBorrado() {
+    const params = new URLSearchParams();
+    const desde = filterDateFrom ? filterDateFrom.value : '';
+    const hasta = filterDateTo ? filterDateTo.value : '';
+
+    if (desde) params.set('fechaDesde', `${desde}T00:00:00.000Z`);
+    if (hasta) params.set('fechaHasta', `${hasta}T23:59:59.999Z`);
 
     return params.toString();
 }
@@ -222,6 +242,12 @@ if (createUserForm) {
     });
 }
 
+if (toggleUsersBtn && usersCard) {
+    toggleUsersBtn.addEventListener('click', () => {
+        usersCard.classList.toggle('hidden');
+    });
+}
+
 refreshBtn.addEventListener('click', async () => {
     statusFeedback.textContent = 'Actualizando datos...';
     try {
@@ -258,6 +284,44 @@ if (clearFilterBtn) {
     });
 }
 
+if (deleteFilteredBtn) {
+    deleteFilteredBtn.addEventListener('click', async () => {
+        const query = construirQueryBorrado();
+        if (!query) {
+            statusFeedback.textContent = 'Seleccioná una fecha desde/hasta para borrar filtrados.';
+            return;
+        }
+
+        const confirmacion = confirm('¿Seguro que querés borrar los pedidos filtrados por fecha?');
+        if (!confirmacion) return;
+
+        statusFeedback.textContent = 'Borrando pedidos filtrados...';
+        try {
+            const result = await fetchAdmin(`/api/admin/pedidos?${query}`, { method: 'DELETE' });
+            statusFeedback.textContent = result.message || 'Pedidos filtrados eliminados.';
+            await cargarPedidos();
+        } catch (error) {
+            statusFeedback.textContent = `No se pudieron borrar pedidos filtrados: ${error.message}`;
+        }
+    });
+}
+
+if (deleteAllBtn) {
+    deleteAllBtn.addEventListener('click', async () => {
+        const confirmacion = confirm('Esto eliminará TODOS los pedidos. ¿Continuar?');
+        if (!confirmacion) return;
+
+        statusFeedback.textContent = 'Borrando todos los pedidos...';
+        try {
+            const result = await fetchAdmin('/api/admin/pedidos?todos=true', { method: 'DELETE' });
+            statusFeedback.textContent = result.message || 'Todos los pedidos eliminados.';
+            await cargarPedidos();
+        } catch (error) {
+            statusFeedback.textContent = `No se pudieron borrar todos los pedidos: ${error.message}`;
+        }
+    });
+}
+
 if (exportXlsxBtn) {
     exportXlsxBtn.addEventListener('click', () => {
         if (!pedidosActuales.length) {
@@ -288,6 +352,30 @@ if (exportXlsxBtn) {
         const stamp = new Date().toISOString().slice(0, 10);
         XLSX.writeFile(libro, `pedidos_${stamp}.xlsx`);
         statusFeedback.textContent = 'Archivo .xlsx exportado correctamente.';
+    });
+}
+
+if (ordersList) {
+    ordersList.addEventListener('click', async (event) => {
+        const target = event.target;
+        if (!(target instanceof HTMLElement)) return;
+
+        if (target.classList.contains('btn-delete-order')) {
+            const id = target.dataset.id;
+            if (!id) return;
+
+            const confirmacion = confirm('¿Eliminar este pedido?');
+            if (!confirmacion) return;
+
+            statusFeedback.textContent = 'Eliminando pedido...';
+            try {
+                const result = await fetchAdmin(`/api/admin/pedidos/${id}`, { method: 'DELETE' });
+                statusFeedback.textContent = result.message || 'Pedido eliminado.';
+                await cargarPedidos();
+            } catch (error) {
+                statusFeedback.textContent = `No se pudo eliminar el pedido: ${error.message}`;
+            }
+        }
     });
 }
 
