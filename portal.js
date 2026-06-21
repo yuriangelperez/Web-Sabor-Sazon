@@ -75,6 +75,15 @@ function formatPriceARS(value) {
     return `$${Number(value || 0).toLocaleString('es-AR')}`;
 }
 
+function obtenerCategoriaProducto(producto) {
+    const p = String(producto || '').toLowerCase();
+    if (p.startsWith('combo')) return 'Combos';
+    if (p.startsWith('arepa')) return 'Arepas';
+    if (p.startsWith('empanada')) return 'Empanadas';
+    if (p.startsWith('teque')) return 'Tequeños';
+    return 'Otros';
+}
+
 function escapeHtml(value) {
     return String(value)
         .replaceAll('&', '&amp;')
@@ -165,29 +174,53 @@ function renderPrecios(precios) {
         return;
     }
 
-    pricesList.innerHTML = precios.map((item) => {
-        const producto = String(item?.producto || 'Producto');
-        const precio = Number(item?.precio || 0);
-        const encodedProducto = encodeURIComponent(producto);
+    const categorias = ['Combos', 'Arepas', 'Empanadas', 'Tequeños', 'Otros'];
+    const grupos = new Map(categorias.map((cat) => [cat, []]));
 
-        return `
-            <div class="price-row">
-                <div class="price-name">${escapeHtml(producto)}</div>
-                <div class="price-controls">
-                    <input
-                        type="number"
-                        min="1"
-                        step="1"
-                        class="price-input"
-                        data-producto="${encodedProducto}"
-                        value="${Math.max(1, Math.round(precio))}"
-                    >
-                    <span class="price-preview">${formatPriceARS(precio)}</span>
-                    <button type="button" class="btn btn-small btn-primary btn-save-price" data-producto="${encodedProducto}">Guardar</button>
-                </div>
-            </div>
-        `;
-    }).join('');
+    precios.forEach((item) => {
+        const producto = String(item?.producto || 'Producto');
+        const categoria = obtenerCategoriaProducto(producto);
+        grupos.get(categoria).push(item);
+    });
+
+    pricesList.innerHTML = categorias
+        .filter((categoria) => (grupos.get(categoria) || []).length > 0)
+        .map((categoria, index) => {
+            const items = grupos.get(categoria) || [];
+            const rows = items.map((item) => {
+                const producto = String(item?.producto || 'Producto');
+                const precio = Number(item?.precio || 0);
+                const encodedProducto = encodeURIComponent(producto);
+
+                return `
+                    <div class="price-row">
+                        <div class="price-name">${escapeHtml(producto)}</div>
+                        <div class="price-controls">
+                            <input
+                                type="number"
+                                min="1"
+                                step="1"
+                                class="price-input"
+                                data-producto="${encodedProducto}"
+                                value="${Math.max(1, Math.round(precio))}"
+                            >
+                            <span class="price-preview">${formatPriceARS(precio)}</span>
+                            <button type="button" class="btn btn-small btn-primary btn-save-price" data-producto="${encodedProducto}">Guardar</button>
+                        </div>
+                    </div>
+                `;
+            }).join('');
+
+            return `
+                <details class="price-category" ${index === 0 ? 'open' : ''}>
+                    <summary>
+                        <span>${escapeHtml(categoria)}</span>
+                        <span class="price-category-count">${items.length}</span>
+                    </summary>
+                    <div class="price-category-list">${rows}</div>
+                </details>
+            `;
+        }).join('');
 }
 
 function setupAudioUnlock() {
