@@ -12,6 +12,9 @@ const saveStatusBtn = document.getElementById('save-status-btn');
 const statusFeedback = document.getElementById('status-feedback');
 const createUserForm = document.getElementById('create-user-form');
 const createUserFeedback = document.getElementById('create-user-feedback');
+const newPasswordInput = document.getElementById('new-password');
+const newPasswordConfirmInput = document.getElementById('new-password-confirm');
+const toggleCreatePasswordsBtn = document.getElementById('toggle-create-passwords-btn');
 const usersCard = document.getElementById('users-card');
 const toggleUsersBtn = document.getElementById('toggle-users-btn');
 
@@ -229,11 +232,18 @@ saveStatusBtn.addEventListener('click', async () => {
 if (createUserForm) {
     createUserForm.addEventListener('submit', async (event) => {
         event.preventDefault();
-        createUserFeedback.textContent = 'Creando usuario...';
 
         const formData = new FormData(createUserForm);
         const username = String(formData.get('new-username') || '').trim();
         const password = String(formData.get('new-password') || '');
+        const passwordConfirm = String(formData.get('new-password-confirm') || '');
+
+        if (password !== passwordConfirm) {
+            createUserFeedback.textContent = 'Las contraseñas no coinciden.';
+            return;
+        }
+
+        createUserFeedback.textContent = 'Creando usuario...';
 
         try {
             const result = await fetchAdmin('/api/admin/usuarios', {
@@ -246,6 +256,15 @@ if (createUserForm) {
         } catch (error) {
             createUserFeedback.textContent = `No se pudo crear usuario: ${error.message}`;
         }
+    });
+}
+
+if (toggleCreatePasswordsBtn && newPasswordInput && newPasswordConfirmInput) {
+    toggleCreatePasswordsBtn.addEventListener('click', () => {
+        const mostrar = newPasswordInput.type === 'password';
+        newPasswordInput.type = mostrar ? 'text' : 'password';
+        newPasswordConfirmInput.type = mostrar ? 'text' : 'password';
+        toggleCreatePasswordsBtn.innerText = mostrar ? 'Ocultar contraseñas' : 'Mostrar contraseñas';
     });
 }
 
