@@ -41,6 +41,16 @@ let pedidosConocidos = new Set();
 let audioContext = null;
 let pedidosStream = null;
 let pedidosStreamReconnectTimer = null;
+let notificationAudio = null;
+const SOUND_NOTIFICATION_CONFIG = {
+    type: 'sine',
+    tones: [880, 1175],
+    attackSeconds: 0.01,
+    toneDurationSeconds: 0.12,
+    gapBetweenTonesSeconds: 0.13,
+    maxGain: 0.2
+};
+const SOUND_NOTIFICATION_FILE_PATH = 'files/sonidoNotificacionPortalPedido.mp3';
 
 function getToken() {
     return sessionStorage.getItem(TOKEN_KEY) || '';
@@ -283,6 +293,11 @@ function renderDisponibilidadRellenos(rellenos) {
 
 function setupAudioUnlock() {
     const unlockAudio = () => {
+        if (!notificationAudio) {
+            notificationAudio = new Audio(SOUND_NOTIFICATION_FILE_PATH);
+            notificationAudio.preload = 'auto';
+        }
+
         if (!audioContext) {
             const Ctx = window.AudioContext || window.webkitAudioContext;
             if (Ctx) {
@@ -299,7 +314,7 @@ function setupAudioUnlock() {
     window.addEventListener('keydown', unlockAudio, { once: true });
 }
 
-function sonarNotificacionNuevoPedido() {
+function sonarBeepRespaldo() {
     try {
         if (!audioContext) {
             const Ctx = window.AudioContext || window.webkitAudioContext;
@@ -312,30 +327,51 @@ function sonarNotificacionNuevoPedido() {
         }
 
         const ahora = audioContext.currentTime;
-        const tonos = [880, 1175];
+        const { tones, type, attackSeconds, toneDurationSeconds, gapBetweenTonesSeconds, maxGain } = SOUND_NOTIFICATION_CONFIG;
 
-        tonos.forEach((frecuencia, index) => {
+        tones.forEach((frecuencia, index) => {
             const osc = audioContext.createOscillator();
             const gain = audioContext.createGain();
 
-            osc.type = 'sine';
+            osc.type = type;
             osc.frequency.setValueAtTime(frecuencia, ahora);
 
             gain.gain.setValueAtTime(0.0001, ahora);
-            gain.gain.exponentialRampToValueAtTime(0.2, ahora + 0.01 + index * 0.13);
-            gain.gain.exponentialRampToValueAtTime(0.0001, ahora + 0.12 + index * 0.13);
+            gain.gain.exponentialRampToValueAtTime(maxGain, ahora + attackSeconds + index * gapBetweenTonesSeconds);
+            gain.gain.exponentialRampToValueAtTime(0.0001, ahora + toneDurationSeconds + index * gapBetweenTonesSeconds);
 
             osc.connect(gain);
             gain.connect(audioContext.destination);
 
-            const startAt = ahora + index * 0.13;
-            const stopAt = startAt + 0.12;
+            const startAt = ahora + index * gapBetweenTonesSeconds;
+            const stopAt = startAt + toneDurationSeconds;
             osc.start(startAt);
             osc.stop(stopAt);
         });
     } catch {
         // Si el navegador bloquea audio, el panel sigue funcionando sin sonido.
     }
+}
+
+function sonarNotificacionNuevoPedido() {
+    if (!notificationAudio) {
+        notificationAudio = new Audio(SOUND_NOTIFICATION_FILE_PATH);
+        notificationAudio.preload = 'auto';
+    }
+
+    notificationAudio.currentTime = 0;
+    const playPromise = notificationAudio.play();
+
+    if (playPromise && typeof playPromise.then === 'function') {
+        playPromise.catch(() => {
+            // Si el archivo no existe o el navegador bloquea autoplay, usamos beep de respaldo.
+            sonarBeepRespaldo();
+        });
+        return;
+    }
+
+    // Navegadores sin promesa en play(): usamos respaldo.
+    sonarBeepRespaldo();
 }
 
 function detectarNuevosPedidos(pedidos) {
