@@ -628,7 +628,7 @@ document.addEventListener('DOMContentLoaded', () => {
                         }
 
                         const recargoTexto = recargoUnitario > 0
-                            ? ` <span style="color: #fbbf24;">(+${formatPriceARS(recargoUnitario)}) x${item.cantidad} +${formatPriceARS(recargoUnitario * item.cantidad)}</span>`
+                            ? ` <span style="color: #fbbf24;">(+${formatPriceARS(recargoUnitario)})</span>`
                             : '';
 
                         return `<span style="color: #e4e4e7;">${componente}:</span> ${sabor}${recargoTexto}`;
