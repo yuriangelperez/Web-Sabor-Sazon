@@ -56,6 +56,7 @@ const PedidoSchema = new mongoose.Schema({
         tipoArepa: String
     }],
     tipoEntrega: { type: String, default: 'retiro' },
+    metodoPago: { type: String, default: 'mercadopago' },
     costoEnvio: { type: Number, default: 0 },
     total: Number,
     estado: { type: String, default: 'Pendiente' },

@@ -79,6 +79,14 @@ function formatPriceARS(value) {
     return `$${Number(value || 0).toLocaleString('es-AR')}`;
 }
 
+function formatMetodoPago(value) {
+    const raw = String(value || '').trim().toLowerCase();
+    if (raw === 'efectivo') return 'Efectivo';
+    if (raw === 'transferencia') return 'Transferencia';
+    if (raw === 'mercadopago' || raw === 'checkout') return 'Checkout';
+    return 'No informado';
+}
+
 function obtenerCategoriaProducto(producto) {
     const p = String(producto || '').toLowerCase();
     if (p.startsWith('combo')) return 'Combos';
@@ -140,6 +148,7 @@ function renderPedidos(pedidos) {
             `;
         }).join('');
         const estadoActual = (pedido.estado || 'Pendiente').toLowerCase();
+        const metodoPago = formatMetodoPago(pedido.metodoPago);
         return `
             <article class="order-item">
                 <div class="order-top">
@@ -162,6 +171,9 @@ function renderPedidos(pedidos) {
                 </div>
                 <div class="order-meta">
                     Entrega: ${pedido.tipoEntrega || 'retiro'} | ${pedido.cliente?.direccion || 'Sin direccion'} | Estado: <span class="estado-badge estado-${estadoActual}">${pedido.estado || 'Pendiente'}</span>
+                </div>
+                <div class="order-meta">
+                    Pago: ${metodoPago}
                 </div>
                 <div class="order-items">${items || 'Sin items'}</div>
                 <div class="order-total">Total: $${Number(pedido.total || 0).toLocaleString('es-AR')}</div>
