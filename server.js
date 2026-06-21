@@ -254,6 +254,15 @@ function tokenMercadoPagoPareceValido(token) {
     return /^(APP_USR|TEST)-/.test(String(token || '').trim());
 }
 
+function limpiarTextoMercadoPago(value, maxLength = 120) {
+    return String(value || '')
+        .normalize('NFD')
+        .replace(/[\u0300-\u036f]/g, '')
+        .replace(/[^a-zA-Z0-9 .,_-]/g, '')
+        .trim()
+        .slice(0, maxLength);
+}
+
 function toBase64Url(input) {
     return Buffer.from(input).toString('base64url');
 }
@@ -710,7 +719,7 @@ app.post('/api/pedidos', async (req, res) => {
 
         // Estructuramos los items para Mercado Pago a partir del carrito recibido
         const itemsMP = req.body.items.map(item => ({
-            title: item.producto,
+            title: limpiarTextoMercadoPago(item.producto || 'Producto'),
             quantity: Number(item.cantidad),
             unit_price: Number(item.precio),
             currency_id: 'ARS'
@@ -719,18 +728,26 @@ app.post('/api/pedidos', async (req, res) => {
         // Si hay costo de envío, lo sumamos como un ítem para que se cobre
         if (req.body.costoEnvio > 0) {
             itemsMP.push({
-                title: '🛵 Costo de Envío',
+                title: 'Costo de Envio',
                 quantity: 1,
                 unit_price: Number(req.body.costoEnvio),
                 currency_id: 'ARS'
             });
         }
 
+        const nombreCliente = String(req.body?.cliente?.nombre || '').trim();
+        const telefonoCliente = String(req.body?.cliente?.telefono || '').replace(/\D/g, '');
+
         // Creamos la preferencia de Mercado Pago
         const preference = new Preference(client);
         const result = await preference.create({
             body: {
                 items: itemsMP,
+                payer: {
+                    name: limpiarTextoMercadoPago(nombreCliente, 60) || undefined,
+                    phone: telefonoCliente ? { number: telefonoCliente } : undefined
+                },
+                statement_descriptor: 'SABORYSAZON',
                 back_urls: {
                     // Links a donde vuelve el cliente tras pagar (pueden ser tu misma web de Vercel)
                     success: 'https://web-sabor-sazon.vercel.app/?status=success',
@@ -738,7 +755,11 @@ app.post('/api/pedidos', async (req, res) => {
                     pending: 'https://web-sabor-sazon.vercel.app/?status=pending'
                 },
                 auto_return: 'approved', // Redirección automática al finalizar el pago exitoso
-                external_reference: nuevoPedido._id.toString() // Asociamos el ID del pedido de Mongo
+                external_reference: nuevoPedido._id.toString(), // Asociamos el ID del pedido de Mongo
+                metadata: {
+                    pedido_id: nuevoPedido._id.toString(),
+                    tipo_entrega: String(req.body?.tipoEntrega || 'retiro')
+                }
             }
         });
 
