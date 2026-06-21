@@ -70,6 +70,26 @@ function formatDate(value) {
     });
 }
 
+function escapeHtml(value) {
+    return String(value)
+        .replaceAll('&', '&amp;')
+        .replaceAll('<', '&lt;')
+        .replaceAll('>', '&gt;')
+        .replaceAll('"', '&quot;')
+        .replaceAll("'", '&#39;');
+}
+
+function detectarCoccionArepa(item) {
+    const gustos = Array.isArray(item?.gustos) ? item.gustos : [];
+    const texto = gustos
+        .map((g) => `${g?.componente || ''} ${g?.sabor || ''}`.toLowerCase())
+        .join(' ');
+
+    if (texto.includes('asada')) return 'Asada';
+    if (texto.includes('frita') || texto.includes('freida') || texto.includes('frito')) return 'Frita';
+    return '';
+}
+
 function renderPedidos(pedidos) {
     pedidosActuales = pedidos;
     ordersCount.textContent = `${pedidos.length} pedido${pedidos.length === 1 ? '' : 's'}`;
@@ -80,7 +100,24 @@ function renderPedidos(pedidos) {
     }
 
     ordersList.innerHTML = pedidos.map((pedido) => {
-        const items = (pedido.items || []).map((item) => `${item.cantidad}x ${item.producto}`).join(' • ');
+        const items = (pedido.items || []).map((item) => {
+            const gustos = Array.isArray(item?.gustos) ? item.gustos : [];
+            const rellenos = gustos
+                .map((gusto) => `${gusto?.componente || 'Item'}: ${gusto?.sabor || '-'}`)
+                .join(' | ');
+            const coccionArepa = detectarCoccionArepa(item);
+
+            const extras = [];
+            if (rellenos) extras.push(`Rellenos: ${rellenos}`);
+            if (coccionArepa) extras.push(`Arepa: ${coccionArepa}`);
+
+            return `
+                <div class="order-item-line">
+                    <span>${escapeHtml(`${item?.cantidad || 0}x ${item?.producto || 'Producto'}`)}</span>
+                    ${extras.length ? `<br><small>${escapeHtml(extras.join(' • '))}</small>` : ''}
+                </div>
+            `;
+        }).join('');
         const estadoActual = (pedido.estado || 'Pendiente').toLowerCase();
         return `
             <article class="order-item">
