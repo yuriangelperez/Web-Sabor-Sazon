@@ -184,18 +184,12 @@ function renderPedidos(pedidos) {
                         <span>${formatDate(pedido.fecha)}</span>
                     </div>
                     <div class="order-actions">
-                        <select class="order-status-select" data-id="${pedido._id}">
+                        <select class="order-status-select order-main-status-select" data-id="${pedido._id}">
                             <option value="pendiente" ${estadoActual === 'pendiente' ? 'selected' : ''}>Pendiente</option>
                             <option value="hecho" ${estadoActual === 'hecho' ? 'selected' : ''}>Hecho</option>
                             <option value="cancelado" ${estadoActual === 'cancelado' ? 'selected' : ''}>Cancelado</option>
                         </select>
                         <button type="button" class="btn btn-small btn-primary btn-save-status" data-id="${pedido._id}">Guardar</button>
-                        <select class="order-status-select order-payment-select" data-id="${pedido._id}">
-                            <option value="pending" ${(pedido.payment_status || 'pending') === 'pending' ? 'selected' : ''}>Pago pendiente</option>
-                            <option value="paid" ${(pedido.payment_status || '') === 'paid' || (pedido.payment_status || '') === 'approved' ? 'selected' : ''}>Pago realizado</option>
-                            <option value="rejected" ${(pedido.payment_status || '') === 'rejected' || (pedido.payment_status || '') === 'cancelled' || (pedido.payment_status || '') === 'failed' ? 'selected' : ''}>Pago rechazado</option>
-                        </select>
-                        <button type="button" class="btn btn-small btn-primary btn-save-payment" data-id="${pedido._id}">Guardar pago</button>
                         <button type="button" class="btn btn-danger btn-small btn-delete-order" data-id="${pedido._id}">Borrar</button>
                     </div>
                 </div>
@@ -207,6 +201,15 @@ function renderPedidos(pedidos) {
                 </div>
                 <div class="order-meta">
                     Pago: ${metodoPago} | Estado pago: <span class="estado-badge ${estadoPagoClase}">${estadoPagoLabel}</span>
+                </div>
+                <div class="order-payment-actions">
+                    <span class="order-payment-label">Confirmacion manual de pago:</span>
+                    <select class="order-status-select order-payment-select" data-id="${pedido._id}">
+                        <option value="pending" ${(pedido.payment_status || 'pending') === 'pending' ? 'selected' : ''}>Aun no pago</option>
+                        <option value="paid" ${(pedido.payment_status || '') === 'paid' || (pedido.payment_status || '') === 'approved' ? 'selected' : ''}>Ya pago</option>
+                        <option value="rejected" ${(pedido.payment_status || '') === 'rejected' || (pedido.payment_status || '') === 'cancelled' || (pedido.payment_status || '') === 'failed' ? 'selected' : ''}>Pago rechazado</option>
+                    </select>
+                    <button type="button" class="btn btn-small btn-primary btn-save-payment" data-id="${pedido._id}">Guardar pago</button>
                 </div>
                 <div class="order-items">${items || 'Sin items'}</div>
                 <div class="order-total">Total: $${Number(pedido.total || 0).toLocaleString('es-AR')}</div>
@@ -836,7 +839,7 @@ if (ordersList) {
             if (!id) return;
 
             const card = target.closest('.order-item');
-            const select = card ? card.querySelector('.order-status-select') : null;
+            const select = card ? card.querySelector('.order-main-status-select') : null;
             const estado = select ? select.value : '';
             if (!estado) return;
 
