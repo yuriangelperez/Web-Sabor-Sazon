@@ -10,12 +10,12 @@ const { MercadoPagoConfig, Preference } = require('mercadopago');
 
 const app = express();
 const PORT = process.env.PORT || 5000;
+const MERCADOPAGO_ACCESS_TOKEN = String(process.env.MERCADOPAGO_ACCESS_TOKEN || '').trim();
 
 // 2. Configurar Mercado Pago con tu Access Token
-// REEMPLAZA ESTO CON TU ACCESS TOKEN REAL DE PRODUCCIÓN o usa una variable de entorno (.env)
-const client = new MercadoPagoConfig({ 
-    accessToken: 'APP_USR-7185940169822450-062112-a8d5f05a8faa53d34438712136cc4989-3486812259' 
-});
+const client = MERCADOPAGO_ACCESS_TOKEN
+    ? new MercadoPagoConfig({ accessToken: MERCADOPAGO_ACCESS_TOKEN })
+    : null;
 
 // Middleware
 app.use(cors({
@@ -242,6 +242,10 @@ function emitirPedidoNuevoSSE(pedido) {
         res.write(`event: pedido_nuevo\n`);
         res.write(`data: ${data}\n\n`);
     });
+}
+
+function tokenMercadoPagoPareceValido(token) {
+    return /^(APP_USR|TEST)-/.test(String(token || '').trim());
 }
 
 function toBase64Url(input) {
@@ -675,6 +679,14 @@ app.put('/api/admin/pedidos/:id/estado', authAdmin, async (req, res) => {
 // 3. RUTA POST ACTUALIZADA: Guarda el pedido y genera el link de Mercado Pago
 app.post('/api/pedidos', async (req, res) => {
     try {
+        if (!client || !tokenMercadoPagoPareceValido(MERCADOPAGO_ACCESS_TOKEN)) {
+            return res.status(500).json({
+                success: false,
+                code: 'MERCADOPAGO_CONFIG_INVALIDA',
+                message: 'Mercado Pago no está configurado correctamente en el servidor.'
+            });
+        }
+
         const estadoLocal = await obtenerEstadoLocal();
         const dentroHorario = estaEnHorario();
         if (!dentroHorario || !estadoLocal.abierto) {
@@ -685,10 +697,10 @@ app.post('/api/pedidos', async (req, res) => {
             });
         }
 
-        // Guardamos primero en la base de datos
-        const nuevoPedido = new Pedido(req.body);
-        await nuevoPedido.save();
-        emitirPedidoNuevoSSE(nuevoPedido);
+        const nuevoPedido = new Pedido({
+            _id: new mongoose.Types.ObjectId(),
+            ...req.body
+        });
 
         // Estructuramos los items para Mercado Pago a partir del carrito recibido
         const itemsMP = req.body.items.map(item => ({
@@ -724,17 +736,42 @@ app.post('/api/pedidos', async (req, res) => {
             }
         });
 
+        await nuevoPedido.save();
+        emitirPedidoNuevoSSE(nuevoPedido);
+
         // Devolvemos el ID de pedido y el link de pago (init_point) al frontend
+        const initPoint = result.init_point || result.sandbox_init_point;
+
+        if (!initPoint) {
+            return res.status(500).json({
+                success: false,
+                code: 'MERCADOPAGO_SIN_URL',
+                message: 'Mercado Pago no devolvió una URL de pago válida.'
+            });
+        }
+
         res.status(201).json({ 
             success: true, 
             pedidoId: nuevoPedido._id, 
-            initPoint: result.init_point // URL de la pasarela de Mercado Pago
+            initPoint // URL de la pasarela de Mercado Pago
         });
 
     } catch (error) {
-        console.error("Error al crear preferencia:", error);
+        console.error('Error al crear preferencia:', {
+            message: error?.message,
+            cause: error?.cause,
+            status: error?.status,
+            response: error?.response?.data || error?.cause
+        });
         res.status(500).json({ success: false, message: 'Error al procesar el pedido', error: error.message });
     }
 });
 
-app.listen(PORT, () => console.log(`Servidor corriendo en puerto ${PORT}`));
+app.listen(PORT, () => {
+    console.log(`Servidor corriendo en puerto ${PORT}`);
+    if (!MERCADOPAGO_ACCESS_TOKEN) {
+        console.warn('MERCADOPAGO_ACCESS_TOKEN no está definido. Mercado Pago no funcionará.');
+    } else {
+        console.log(`Mercado Pago configurado con token terminado en ${MERCADOPAGO_ACCESS_TOKEN.slice(-6)}`);
+    }
+});
