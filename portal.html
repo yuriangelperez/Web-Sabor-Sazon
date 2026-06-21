@@ -33,6 +33,7 @@
                 <h1>Panel del Local</h1>
                 <div class="header-actions">
                     <button id="toggle-users-btn" class="btn">Usuarios</button>
+                    <button id="toggle-prices-btn" class="btn">Precios y Stock</button>
                     <button id="refresh-btn" class="btn">Actualizar</button>
                     <button id="logout-btn" class="btn btn-danger">Salir</button>
                 </div>
@@ -70,10 +71,18 @@
                 <p id="create-user-feedback" class="helper-text" aria-live="polite"></p>
             </article>
 
-            <article class="status-card" id="prices-card">
+            <article class="status-card hidden" id="prices-card">
                 <h2>Precios del Menu</h2>
                 <p class="helper-text">Actualiza precios y se reflejaran automaticamente en la web publica.</p>
                 <div id="prices-list" class="prices-list"></div>
+
+                <h2 style="margin-top:16px;">Disponibilidad de Productos</h2>
+                <p class="helper-text">Desactiva productos para que no se puedan pedir.</p>
+                <div id="availability-products-list" class="availability-list"></div>
+
+                <h2 style="margin-top:16px;">Disponibilidad de Rellenos</h2>
+                <p class="helper-text">Desactiva rellenos para ocultarlos en las opciones del cliente.</p>
+                <div id="availability-fillings-list" class="availability-list"></div>
             </article>
 
             <article class="orders-card">

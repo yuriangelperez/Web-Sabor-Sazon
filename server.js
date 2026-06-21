@@ -77,6 +77,14 @@ const PrecioProductoSchema = new mongoose.Schema({
     actualizadoEn: { type: Date, default: Date.now }
 });
 const PrecioProducto = mongoose.model('PrecioProducto', PrecioProductoSchema);
+const DisponibilidadSchema = new mongoose.Schema({
+    tipo: { type: String, enum: ['producto', 'relleno'], required: true },
+    nombre: { type: String, required: true },
+    habilitado: { type: Boolean, default: true },
+    actualizadoEn: { type: Date, default: Date.now }
+});
+DisponibilidadSchema.index({ tipo: 1, nombre: 1 }, { unique: true });
+const Disponibilidad = mongoose.model('Disponibilidad', DisponibilidadSchema);
 const clientesSSEPedidos = new Set();
 
 function obtenerCatalogoPreciosBase() {
@@ -99,6 +107,33 @@ function obtenerCatalogoPreciosBase() {
         }
 
         return productos;
+    } catch {
+        return [];
+    }
+}
+
+function obtenerRellenosBase() {
+    try {
+        const indexPath = path.join(__dirname, 'index.html');
+        const contenido = fs.readFileSync(indexPath, 'utf8');
+        const regex = /<option\s+value="([^"]+)"/g;
+        const excluir = new Set(['asada', 'frita', '']);
+        const rellenos = new Set();
+
+        let match;
+        while ((match = regex.exec(contenido)) !== null) {
+            const valor = String(match[1] || '').trim();
+            const normalizado = valor.toLowerCase();
+
+            if (!valor || excluir.has(normalizado)) continue;
+            if (/^\d+$/.test(valor)) continue;
+            if (normalizado.includes('no-delivery')) continue;
+            if (valor.length > 40) continue;
+
+            rellenos.add(valor);
+        }
+
+        return Array.from(rellenos);
     } catch {
         return [];
     }
@@ -129,6 +164,26 @@ async function obtenerCatalogoPreciosFinal() {
     });
 
     return catalogo;
+}
+
+async function obtenerCatalogoDisponibilidad() {
+    const productosBase = obtenerCatalogoPreciosBase().map((item) => item.producto);
+    const rellenosBase = obtenerRellenosBase();
+    const overrides = await Disponibilidad.find({}).lean();
+
+    const mapProductos = new Map(productosBase.map((nombre) => [nombre, true]));
+    const mapRellenos = new Map(rellenosBase.map((nombre) => [nombre, true]));
+
+    overrides.forEach((item) => {
+        if (!item?.nombre || typeof item?.habilitado !== 'boolean') return;
+        if (item.tipo === 'producto') mapProductos.set(item.nombre, item.habilitado);
+        if (item.tipo === 'relleno') mapRellenos.set(item.nombre, item.habilitado);
+    });
+
+    return {
+        productos: Array.from(mapProductos.entries()).map(([nombre, habilitado]) => ({ nombre, habilitado })),
+        rellenos: Array.from(mapRellenos.entries()).map(([nombre, habilitado]) => ({ nombre, habilitado }))
+    };
 }
 
 async function obtenerEstadoLocal() {
@@ -365,6 +420,25 @@ app.get('/api/admin/precios', authAdmin, async (req, res) => {
     }
 });
 
+app.get('/api/disponibilidad', async (req, res) => {
+    try {
+        const catalogo = await obtenerCatalogoDisponibilidad();
+        res.status(200).json({ success: true, ...catalogo });
+    } catch {
+        res.status(500).json({ success: false, message: 'No se pudo obtener disponibilidad' });
+    }
+});
+
+app.get('/api/admin/catalogo', authAdmin, async (req, res) => {
+    try {
+        const precios = await obtenerCatalogoPreciosFinal();
+        const disponibilidad = await obtenerCatalogoDisponibilidad();
+        res.status(200).json({ success: true, precios, ...disponibilidad });
+    } catch {
+        res.status(500).json({ success: false, message: 'No se pudo obtener el catalogo' });
+    }
+});
+
 app.put('/api/admin/precios/:producto', authAdmin, async (req, res) => {
     try {
         const producto = decodeURIComponent(String(req.params.producto || '')).trim();
@@ -398,6 +472,58 @@ app.put('/api/admin/precios/:producto', authAdmin, async (req, res) => {
         });
     } catch {
         return res.status(500).json({ success: false, message: 'No se pudo actualizar el precio del producto' });
+    }
+});
+
+app.put('/api/admin/disponibilidad/productos/:nombre', authAdmin, async (req, res) => {
+    try {
+        const nombre = decodeURIComponent(String(req.params.nombre || '')).trim();
+        const habilitado = Boolean(req.body?.habilitado);
+
+        if (!nombre) {
+            return res.status(400).json({ success: false, message: 'Producto invalido' });
+        }
+
+        const existeEnBase = obtenerCatalogoPreciosBase().some((item) => item.producto === nombre);
+        if (!existeEnBase) {
+            return res.status(404).json({ success: false, message: 'Producto no encontrado' });
+        }
+
+        await Disponibilidad.findOneAndUpdate(
+            { tipo: 'producto', nombre },
+            { $set: { tipo: 'producto', nombre, habilitado, actualizadoEn: new Date() } },
+            { upsert: true, new: true }
+        );
+
+        return res.status(200).json({ success: true, nombre, habilitado });
+    } catch {
+        return res.status(500).json({ success: false, message: 'No se pudo actualizar disponibilidad del producto' });
+    }
+});
+
+app.put('/api/admin/disponibilidad/rellenos/:nombre', authAdmin, async (req, res) => {
+    try {
+        const nombre = decodeURIComponent(String(req.params.nombre || '')).trim();
+        const habilitado = Boolean(req.body?.habilitado);
+
+        if (!nombre) {
+            return res.status(400).json({ success: false, message: 'Relleno invalido' });
+        }
+
+        const existeEnBase = obtenerRellenosBase().includes(nombre);
+        if (!existeEnBase) {
+            return res.status(404).json({ success: false, message: 'Relleno no encontrado' });
+        }
+
+        await Disponibilidad.findOneAndUpdate(
+            { tipo: 'relleno', nombre },
+            { $set: { tipo: 'relleno', nombre, habilitado, actualizadoEn: new Date() } },
+            { upsert: true, new: true }
+        );
+
+        return res.status(200).json({ success: true, nombre, habilitado });
+    } catch {
+        return res.status(500).json({ success: false, message: 'No se pudo actualizar disponibilidad del relleno' });
     }
 });
 

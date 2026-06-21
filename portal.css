@@ -354,6 +354,30 @@ input[type='number'] {
     font-size: 13px;
 }
 
+.availability-list {
+    display: grid;
+    gap: 6px;
+}
+
+.availability-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 10px;
+    background: #12121a;
+    border: 1px solid rgba(255, 255, 255, 0.06);
+    border-radius: 8px;
+    padding: 8px 10px;
+    font-size: 13px;
+    color: var(--text);
+}
+
+.availability-row input[type='checkbox'] {
+    width: 18px;
+    height: 18px;
+    accent-color: #3b9b58;
+}
+
 @media (max-width: 700px) {
     .panel-header {
         flex-direction: column;

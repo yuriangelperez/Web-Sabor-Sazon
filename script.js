@@ -26,6 +26,8 @@ document.addEventListener('DOMContentLoaded', () => {
     const formularioPedido = document.getElementById('form-pedido');
     const bannerEstado = document.getElementById('local-estado-banner');
     const botonesAgregar = Array.from(document.querySelectorAll('.btn-agregar'));
+    const productosNoDisponibles = new Set();
+    const rellenosNoDisponibles = new Set();
 
     function formatPriceARS(value) {
         return `$${Number(value || 0).toLocaleString('es-AR')}`;
@@ -171,11 +173,17 @@ document.addEventListener('DOMContentLoaded', () => {
         localAbierto = abierto;
 
         botonesAgregar.forEach((btn) => {
-            btn.disabled = !abierto;
-            btn.style.opacity = abierto ? '1' : '0.55';
+            const producto = String(btn.getAttribute('data-producto') || '');
+            const disponibleProducto = !productosNoDisponibles.has(producto);
+            btn.disabled = !abierto || !disponibleProducto;
+            btn.style.opacity = (!abierto || !disponibleProducto) ? '0.55' : '1';
+
             if (!abierto) {
                 btn.dataset.textoOriginal = btn.dataset.textoOriginal || btn.innerText;
                 btn.innerText = 'Local cerrado';
+            } else if (!disponibleProducto) {
+                btn.dataset.textoOriginal = btn.dataset.textoOriginal || btn.innerText;
+                btn.innerText = 'No disponible';
             } else if (btn.dataset.textoOriginal) {
                 btn.innerText = btn.dataset.textoOriginal;
             }
@@ -216,8 +224,60 @@ document.addEventListener('DOMContentLoaded', () => {
         return localAbierto;
     }
 
+    function aplicarDisponibilidadRellenos() {
+        const selectores = document.querySelectorAll('.custom-select');
+
+        selectores.forEach((select) => {
+            if (!(select instanceof HTMLSelectElement)) return;
+
+            const opciones = Array.from(select.options);
+            opciones.forEach((option) => {
+                const valor = String(option.value || '').trim();
+                if (!valor || /^\d+$/.test(valor)) return;
+                if (valor.toLowerCase() === 'asada' || valor.toLowerCase() === 'frita') return;
+                option.disabled = rellenosNoDisponibles.has(valor);
+            });
+
+            const seleccionActual = select.options[select.selectedIndex];
+            if (seleccionActual && seleccionActual.disabled) {
+                const primeraDisponible = opciones.find((op) => !op.disabled);
+                if (primeraDisponible) {
+                    select.value = primeraDisponible.value;
+                }
+            }
+        });
+    }
+
+    async function cargarDisponibilidad() {
+        try {
+            const res = await fetch(`${API_BASE}/api/disponibilidad`);
+            const data = await res.json();
+            if (!data?.success) return;
+
+            productosNoDisponibles.clear();
+            (data.productos || []).forEach((item) => {
+                if (item && item.nombre && item.habilitado === false) {
+                    productosNoDisponibles.add(String(item.nombre));
+                }
+            });
+
+            rellenosNoDisponibles.clear();
+            (data.rellenos || []).forEach((item) => {
+                if (item && item.nombre && item.habilitado === false) {
+                    rellenosNoDisponibles.add(String(item.nombre));
+                }
+            });
+
+            aplicarEstadoLocalEnUI(localAbierto);
+            aplicarDisponibilidadRellenos();
+        } catch (error) {
+            console.error('No se pudo cargar disponibilidad:', error);
+        }
+    }
+
     consultarEstadoLocal();
     cargarPreciosActualizados();
+    cargarDisponibilidad();
     inicializarBotonesVerImagen();
 
     // 1. MANEJADOR DE CLICS (Agregar productos y soporte para botones visuales de entrega/pago)

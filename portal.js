@@ -17,6 +17,8 @@ const newPasswordConfirmInput = document.getElementById('new-password-confirm');
 const toggleCreatePasswordsBtn = document.getElementById('toggle-create-passwords-btn');
 const usersCard = document.getElementById('users-card');
 const toggleUsersBtn = document.getElementById('toggle-users-btn');
+const togglePricesBtn = document.getElementById('toggle-prices-btn');
+const pricesCard = document.getElementById('prices-card');
 
 const refreshBtn = document.getElementById('refresh-btn');
 const logoutBtn = document.getElementById('logout-btn');
@@ -30,6 +32,8 @@ const exportXlsxBtn = document.getElementById('export-xlsx-btn');
 const deleteFilteredBtn = document.getElementById('delete-filtered-btn');
 const deleteAllBtn = document.getElementById('delete-all-btn');
 const pricesList = document.getElementById('prices-list');
+const availabilityProductsList = document.getElementById('availability-products-list');
+const availabilityFillingsList = document.getElementById('availability-fillings-list');
 
 let pedidosActuales = [];
 let autoRefreshTimer = null;
@@ -223,6 +227,48 @@ function renderPrecios(precios) {
         }).join('');
 }
 
+function renderDisponibilidadProductos(productos) {
+    if (!availabilityProductsList) return;
+
+    if (!Array.isArray(productos) || !productos.length) {
+        availabilityProductsList.innerHTML = '<p class="helper-text">No hay productos.</p>';
+        return;
+    }
+
+    availabilityProductsList.innerHTML = productos.map((item) => {
+        const nombre = String(item?.nombre || 'Producto');
+        const habilitado = Boolean(item?.habilitado);
+        const encoded = encodeURIComponent(nombre);
+        return `
+            <label class="availability-row">
+                <span>${escapeHtml(nombre)}</span>
+                <input type="checkbox" class="availability-toggle" data-tipo="producto" data-nombre="${encoded}" ${habilitado ? 'checked' : ''}>
+            </label>
+        `;
+    }).join('');
+}
+
+function renderDisponibilidadRellenos(rellenos) {
+    if (!availabilityFillingsList) return;
+
+    if (!Array.isArray(rellenos) || !rellenos.length) {
+        availabilityFillingsList.innerHTML = '<p class="helper-text">No hay rellenos.</p>';
+        return;
+    }
+
+    availabilityFillingsList.innerHTML = rellenos.map((item) => {
+        const nombre = String(item?.nombre || 'Relleno');
+        const habilitado = Boolean(item?.habilitado);
+        const encoded = encodeURIComponent(nombre);
+        return `
+            <label class="availability-row">
+                <span>${escapeHtml(nombre)}</span>
+                <input type="checkbox" class="availability-toggle" data-tipo="relleno" data-nombre="${encoded}" ${habilitado ? 'checked' : ''}>
+            </label>
+        `;
+    }).join('');
+}
+
 function setupAudioUnlock() {
     const unlockAudio = () => {
         if (!audioContext) {
@@ -385,8 +431,10 @@ async function cargarPedidos() {
 }
 
 async function cargarPrecios() {
-    const data = await fetchAdmin('/api/admin/precios');
+    const data = await fetchAdmin('/api/admin/catalogo');
     renderPrecios(data.precios || []);
+    renderDisponibilidadProductos(data.productos || []);
+    renderDisponibilidadRellenos(data.rellenos || []);
 }
 
 async function inicializarPanel() {
@@ -539,6 +587,12 @@ if (toggleCreatePasswordsBtn && newPasswordInput && newPasswordConfirmInput) {
 if (toggleUsersBtn && usersCard) {
     toggleUsersBtn.addEventListener('click', () => {
         usersCard.classList.toggle('hidden');
+    });
+}
+
+if (togglePricesBtn && pricesCard) {
+    togglePricesBtn.addEventListener('click', () => {
+        pricesCard.classList.toggle('hidden');
     });
 }
 
@@ -740,6 +794,41 @@ if (pricesList) {
         preview.textContent = Number.isFinite(value) && value > 0 ? formatPriceARS(Math.round(value)) : '$-';
     });
 }
+
+async function actualizarDisponibilidad(tipo, encodedNombre, habilitado) {
+    const basePath = tipo === 'relleno' ? '/api/admin/disponibilidad/rellenos' : '/api/admin/disponibilidad/productos';
+    await fetchAdmin(`${basePath}/${encodedNombre}`, {
+        method: 'PUT',
+        body: JSON.stringify({ habilitado })
+    });
+}
+
+function registrarEventosDisponibilidad(lista, tipo) {
+    if (!lista) return;
+
+    lista.addEventListener('change', async (event) => {
+        const target = event.target;
+        if (!(target instanceof HTMLInputElement)) return;
+        if (!target.classList.contains('availability-toggle')) return;
+
+        const encodedNombre = String(target.dataset.nombre || '');
+        if (!encodedNombre) return;
+
+        const habilitado = target.checked;
+        statusFeedback.textContent = 'Actualizando disponibilidad...';
+
+        try {
+            await actualizarDisponibilidad(tipo, encodedNombre, habilitado);
+            statusFeedback.textContent = 'Disponibilidad actualizada.';
+        } catch (error) {
+            target.checked = !habilitado;
+            statusFeedback.textContent = `No se pudo actualizar disponibilidad: ${error.message}`;
+        }
+    });
+}
+
+registrarEventosDisponibilidad(availabilityProductsList, 'producto');
+registrarEventosDisponibilidad(availabilityFillingsList, 'relleno');
 
 logoutBtn.addEventListener('click', () => {
     detenerStreamPedidos();
