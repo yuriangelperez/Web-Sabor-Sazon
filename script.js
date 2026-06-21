@@ -26,7 +26,106 @@ document.addEventListener('DOMContentLoaded', () => {
     const formularioPedido = document.getElementById('form-pedido');
     const bannerEstado = document.getElementById('local-estado-banner');
     const botonesAgregar = Array.from(document.querySelectorAll('.btn-agregar'));
+
+    const imagenesPorProducto = {
+        'Combo Zulia': 'files/comboZulia.jpg',
+        'Combo Maracay': 'files/comboMaracay.png',
+        'Combo Caracas': 'files/comboCaracas.jpg',
+        'Combo Vargas': 'files/comboVargas.jpg',
+        'Arepa de Pollo': 'files/arepaPollo.jpeg',
+        'Arepa de Queso': 'files/arepaQueso.jpeg',
+        'Arepa Carne Mechada': 'files/arepaCarneMechada.jpg',
+        'Arepa Dominó': 'files/arepaDomino.jpeg',
+        'Arepa Catira': 'files/arepaCatira.jpeg',
+        'Arepa Pelúa': 'files/arepaPeluda.jpeg',
+        'Arepa Pabellón': 'files/arepaPabellon.jpg',
+        'Empanada Pollo': 'files/empanadaPollo.jpeg',
+        'Empanada Queso': 'files/empanadaQueso.jpg',
+        'Empanada Carne Mechada': 'files/empanadaCarne.jpeg',
+        'Empanada Porotos': 'files/empanadasPorotos.jpg',
+        'Empanada Dominó': 'files/empanadasPorotosQueso.jpg.jpg',
+        'Empanada Catira': 'files/empanadaPolloQueso.jpg',
+        'Empanada Pelúa': 'files/empanadaCarneQueso.jpg',
+        'Empanada Pabellón': 'files/empanadaPabellon.jpg',
+        'Tequeños Fritos x12': 'files/tequenios12.jpeg',
+        'Tequeños Fritos x6': 'files/tequenios12.jpeg',
+        'Tequeños Congelados x12': 'files/tequenios12.jpeg',
+        'Tequeños Congelados x6': 'files/tequenios12.jpeg',
+        'Tequeños Fritos Promoción x8': 'files/tequenios12.jpeg',
+        'Tequeños x20': 'files/tequenios20.jpg'
+    };
+
+    const imagenFallback = 'files/1.jpg';
+    let modalImagenProducto = null;
+    let tituloModalImagen = null;
+    let imagenModalProducto = null;
     let localAbierto = true;
+
+    function obtenerImagenPorProducto(producto) {
+        return imagenesPorProducto[producto] || imagenFallback;
+    }
+
+    function abrirModalImagen(producto) {
+        if (!modalImagenProducto || !tituloModalImagen || !imagenModalProducto) return;
+
+        tituloModalImagen.innerText = producto || 'Imagen del producto';
+        imagenModalProducto.src = obtenerImagenPorProducto(producto);
+        imagenModalProducto.alt = `Imagen de ${producto}`;
+        modalImagenProducto.classList.add('is-open');
+        document.body.style.overflow = 'hidden';
+    }
+
+    function cerrarModalImagen() {
+        if (!modalImagenProducto) return;
+        modalImagenProducto.classList.remove('is-open');
+        document.body.style.overflow = '';
+    }
+
+    function inicializarBotonesVerImagen() {
+        botonesAgregar.forEach((btnAgregar) => {
+            const producto = btnAgregar.getAttribute('data-producto');
+            if (!producto || btnAgregar.previousElementSibling?.classList.contains('btn-ver-imagen')) return;
+
+            const btnVerImagen = document.createElement('button');
+            btnVerImagen.type = 'button';
+            btnVerImagen.className = 'btn-ver-imagen';
+            btnVerImagen.setAttribute('data-producto', producto);
+            btnVerImagen.innerText = 'Ver imagen';
+
+            btnAgregar.parentNode.insertBefore(btnVerImagen, btnAgregar);
+        });
+
+        const modal = document.createElement('div');
+        modal.id = 'modal-imagen-producto';
+        modal.className = 'modal-imagen-producto';
+        modal.innerHTML = `
+            <div class="modal-imagen-producto__contenido" role="dialog" aria-modal="true" aria-label="Vista previa del producto">
+                <button type="button" class="modal-imagen-producto__cerrar" aria-label="Cerrar">✕</button>
+                <h4 class="modal-imagen-producto__titulo"></h4>
+                <div class="modal-imagen-producto__cuadro">
+                    <img class="modal-imagen-producto__img" src="" alt="">
+                </div>
+            </div>
+        `;
+
+        document.body.appendChild(modal);
+        modalImagenProducto = modal;
+        tituloModalImagen = modal.querySelector('.modal-imagen-producto__titulo');
+        imagenModalProducto = modal.querySelector('.modal-imagen-producto__img');
+
+        const botonCerrar = modal.querySelector('.modal-imagen-producto__cerrar');
+        if (botonCerrar) botonCerrar.addEventListener('click', cerrarModalImagen);
+
+        modal.addEventListener('click', (e) => {
+            if (e.target === modal) cerrarModalImagen();
+        });
+
+        document.addEventListener('keydown', (e) => {
+            if (e.key === 'Escape' && modalImagenProducto?.classList.contains('is-open')) {
+                cerrarModalImagen();
+            }
+        });
+    }
 
     function aplicarEstadoLocalEnUI(abierto) {
         const btnSubmit = formularioPedido ? formularioPedido.querySelector('button[type="submit"]') : null;
@@ -79,9 +178,17 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     consultarEstadoLocal();
+    inicializarBotonesVerImagen();
 
     // 1. MANEJADOR DE CLICS (Agregar productos y soporte para botones visuales de entrega/pago)
     document.addEventListener('click', (e) => {
+        const botonVerImagen = e.target.closest('.btn-ver-imagen');
+        if (botonVerImagen) {
+            const producto = botonVerImagen.getAttribute('data-producto');
+            abrirModalImagen(producto);
+            return;
+        }
+
         if (e.target && e.target.classList.contains('btn-agregar')) {
             if (!localAbierto) {
                 alert('El local está cerrado por el momento. Volvé a intentar más tarde.');
