@@ -17,6 +17,13 @@ const refreshBtn = document.getElementById('refresh-btn');
 const logoutBtn = document.getElementById('logout-btn');
 const ordersList = document.getElementById('orders-list');
 const ordersCount = document.getElementById('orders-count');
+const filterDateFrom = document.getElementById('filter-date-from');
+const filterDateTo = document.getElementById('filter-date-to');
+const applyFilterBtn = document.getElementById('apply-filter-btn');
+const clearFilterBtn = document.getElementById('clear-filter-btn');
+const exportXlsxBtn = document.getElementById('export-xlsx-btn');
+
+let pedidosActuales = [];
 
 function getToken() {
     return sessionStorage.getItem(TOKEN_KEY) || '';
@@ -52,6 +59,7 @@ function formatDate(value) {
 }
 
 function renderPedidos(pedidos) {
+    pedidosActuales = pedidos;
     ordersCount.textContent = `${pedidos.length} pedido${pedidos.length === 1 ? '' : 's'}`;
 
     if (!pedidos.length) {
@@ -78,6 +86,23 @@ function renderPedidos(pedidos) {
             </article>
         `;
     }).join('');
+}
+
+function construirQueryPedidos() {
+    const params = new URLSearchParams();
+    params.set('limit', '1000');
+
+    const desde = filterDateFrom ? filterDateFrom.value : '';
+    const hasta = filterDateTo ? filterDateTo.value : '';
+
+    if (desde) {
+        params.set('fechaDesde', `${desde}T00:00:00.000Z`);
+    }
+    if (hasta) {
+        params.set('fechaHasta', `${hasta}T23:59:59.999Z`);
+    }
+
+    return params.toString();
 }
 
 async function fetchAdmin(path, options = {}) {
@@ -122,7 +147,8 @@ async function cargarEstado() {
 }
 
 async function cargarPedidos() {
-    const data = await fetchAdmin('/api/admin/pedidos?limit=150');
+    const query = construirQueryPedidos();
+    const data = await fetchAdmin(`/api/admin/pedidos?${query}`);
     renderPedidos(data.pedidos || []);
 }
 
@@ -205,6 +231,65 @@ refreshBtn.addEventListener('click', async () => {
         statusFeedback.textContent = 'No se pudieron actualizar los datos.';
     }
 });
+
+if (applyFilterBtn) {
+    applyFilterBtn.addEventListener('click', async () => {
+        statusFeedback.textContent = 'Aplicando filtro...';
+        try {
+            await cargarPedidos();
+            statusFeedback.textContent = 'Filtro aplicado.';
+        } catch (error) {
+            statusFeedback.textContent = `No se pudo aplicar filtro: ${error.message}`;
+        }
+    });
+}
+
+if (clearFilterBtn) {
+    clearFilterBtn.addEventListener('click', async () => {
+        if (filterDateFrom) filterDateFrom.value = '';
+        if (filterDateTo) filterDateTo.value = '';
+        statusFeedback.textContent = 'Limpiando filtros...';
+        try {
+            await cargarPedidos();
+            statusFeedback.textContent = 'Filtros limpiados.';
+        } catch (error) {
+            statusFeedback.textContent = `No se pudieron limpiar filtros: ${error.message}`;
+        }
+    });
+}
+
+if (exportXlsxBtn) {
+    exportXlsxBtn.addEventListener('click', () => {
+        if (!pedidosActuales.length) {
+            statusFeedback.textContent = 'No hay pedidos para exportar.';
+            return;
+        }
+
+        if (typeof XLSX === 'undefined') {
+            statusFeedback.textContent = 'No se pudo cargar la libreria de exportacion.';
+            return;
+        }
+
+        const filas = pedidosActuales.map((pedido) => ({
+            ID: pedido._id,
+            Fecha: formatDate(pedido.fecha),
+            Cliente: pedido.cliente?.nombre || '',
+            Telefono: pedido.cliente?.telefono || '',
+            Entrega: pedido.tipoEntrega || '',
+            Direccion: pedido.cliente?.direccion || '',
+            Items: (pedido.items || []).map((item) => `${item.cantidad}x ${item.producto}`).join(' | '),
+            Total: Number(pedido.total || 0)
+        }));
+
+        const hoja = XLSX.utils.json_to_sheet(filas);
+        const libro = XLSX.utils.book_new();
+        XLSX.utils.book_append_sheet(libro, hoja, 'Pedidos');
+
+        const stamp = new Date().toISOString().slice(0, 10);
+        XLSX.writeFile(libro, `pedidos_${stamp}.xlsx`);
+        statusFeedback.textContent = 'Archivo .xlsx exportado correctamente.';
+    });
+}
 
 logoutBtn.addEventListener('click', () => {
     clearToken();

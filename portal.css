@@ -63,7 +63,8 @@ label {
 }
 
 input[type='text'],
-input[type='password'] {
+input[type='password'],
+input[type='date'] {
     width: 100%;
     background: #0f0f14;
     color: var(--text);
@@ -193,6 +194,23 @@ input[type='password'] {
     gap: 10px;
 }
 
+.orders-filters {
+    display: grid;
+    grid-template-columns: repeat(5, minmax(120px, 1fr));
+    gap: 8px;
+    align-items: end;
+    margin-bottom: 12px;
+}
+
+.filter-group {
+    display: grid;
+    gap: 6px;
+}
+
+.filter-group label {
+    font-size: 12px;
+}
+
 .order-item {
     padding: 12px;
     border-radius: 10px;
@@ -223,5 +241,9 @@ input[type='password'] {
     .panel-header {
         flex-direction: column;
         align-items: flex-start;
+    }
+
+    .orders-filters {
+        grid-template-columns: 1fr;
     }
 }

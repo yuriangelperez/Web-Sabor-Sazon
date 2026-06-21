@@ -69,11 +69,25 @@
                     <h2>Pedidos Recientes</h2>
                     <span id="orders-count">0 pedidos</span>
                 </div>
+                <div class="orders-filters">
+                    <div class="filter-group">
+                        <label for="filter-date-from">Desde</label>
+                        <input type="date" id="filter-date-from">
+                    </div>
+                    <div class="filter-group">
+                        <label for="filter-date-to">Hasta</label>
+                        <input type="date" id="filter-date-to">
+                    </div>
+                    <button id="apply-filter-btn" class="btn">Filtrar</button>
+                    <button id="clear-filter-btn" class="btn">Limpiar</button>
+                    <button id="export-xlsx-btn" class="btn btn-primary">Exportar .xlsx</button>
+                </div>
                 <div id="orders-list" class="orders-list"></div>
             </article>
         </section>
     </main>
 
+    <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
     <script src="portal.js"></script>
 </body>
 

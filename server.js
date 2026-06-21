@@ -236,8 +236,33 @@ app.put('/api/admin/estado-local', authAdmin, async (req, res) => {
 
 app.get('/api/admin/pedidos', authAdmin, async (req, res) => {
     try {
-        const limit = Math.min(parseInt(req.query.limit, 10) || 100, 300);
-        const pedidos = await Pedido.find().sort({ fecha: -1 }).limit(limit);
+        const limit = Math.min(parseInt(req.query.limit, 10) || 100, 1000);
+        const { fechaDesde, fechaHasta } = req.query;
+
+        const filtros = {};
+        if (fechaDesde || fechaHasta) {
+            filtros.fecha = {};
+
+            if (fechaDesde) {
+                const desde = new Date(fechaDesde);
+                if (!Number.isNaN(desde.getTime())) {
+                    filtros.fecha.$gte = desde;
+                }
+            }
+
+            if (fechaHasta) {
+                const hasta = new Date(fechaHasta);
+                if (!Number.isNaN(hasta.getTime())) {
+                    filtros.fecha.$lte = hasta;
+                }
+            }
+
+            if (Object.keys(filtros.fecha).length === 0) {
+                delete filtros.fecha;
+            }
+        }
+
+        const pedidos = await Pedido.find(filtros).sort({ fecha: -1 }).limit(limit);
         res.status(200).json({ success: true, pedidos });
     } catch (error) {
         res.status(500).json({ success: false, message: 'No se pudieron obtener los pedidos' });
