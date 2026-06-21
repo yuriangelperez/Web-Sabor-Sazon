@@ -683,7 +683,7 @@ document.addEventListener('DOMContentLoaded', () => {
                         mensajeWA += `\n*Total Pagado:* $${totalGeneral.toLocaleString('es-AR')}\n\n¡Pago realizado por Mercado Pago!`;
                     }
 
-                    const urlWhatsApp = `https://wa.me/541125523930?text=${encodeURIComponent(mensajeWA)}`;
+                    const urlWhatsApp = `https://wa.me/541136313508?text=${encodeURIComponent(mensajeWA)}`;
 
                     // --- RESET TOTAL DE INTERFAZ ---
                     carrito = []; costoEnvio = 0;
