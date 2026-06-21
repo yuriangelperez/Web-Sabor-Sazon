@@ -575,6 +575,8 @@ document.addEventListener('DOMContentLoaded', () => {
         carrito.forEach((item, index) => {
             const subtotal = item.precio * item.cantidad;
             totalProductos += subtotal;
+            const adicionalUnidad = calcularAdicionalCombo(item.producto, item.gustos || []);
+            const adicionalTotal = adicionalUnidad * item.cantidad;
 
             const itemDivCheckout = document.createElement('div');
             itemDivCheckout.style.marginBottom = '14px';
@@ -609,7 +611,13 @@ document.addEventListener('DOMContentLoaded', () => {
                     contenedor.style.color = '#a1a1aa';
                     contenedor.style.marginTop = '4px';
                     contenedor.style.paddingLeft = '15px';
-                    contenedor.innerHTML = item.gustos.map(g => `<span style="color: #e4e4e7;">${g.componente}:</span> ${g.sabor}`).join('<br>');
+                    const gustosHtml = item.gustos
+                        .map(g => `<span style="color: #e4e4e7;">${g.componente}:</span> ${g.sabor}`)
+                        .join('<br>');
+                    const adicionalHtml = adicionalUnidad > 0
+                        ? `<br><span style="color: #fbbf24;">Adicional combo: +${formatPriceARS(adicionalUnidad)} c/u (total +${formatPriceARS(adicionalTotal)})</span>`
+                        : '';
+                    contenedor.innerHTML = `${gustosHtml}${adicionalHtml}`;
                     return contenedor;
                 };
                 itemDivCheckout.appendChild(generarHTMLGustos());
