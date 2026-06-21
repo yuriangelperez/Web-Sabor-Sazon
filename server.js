@@ -2,6 +2,8 @@ const express = require('express');
 const mongoose = require('mongoose');
 const cors = require('cors');
 const crypto = require('crypto');
+const fs = require('fs');
+const path = require('path');
 require('dotenv').config();
 // 1. Importamos Mercado Pago
 const { MercadoPagoConfig, Preference } = require('mercadopago');
@@ -69,7 +71,65 @@ const EstadoLocalSchema = new mongoose.Schema({
     actualizadoEn: { type: Date, default: Date.now }
 });
 const EstadoLocal = mongoose.model('EstadoLocal', EstadoLocalSchema);
+const PrecioProductoSchema = new mongoose.Schema({
+    producto: { type: String, required: true, unique: true },
+    precio: { type: Number, required: true },
+    actualizadoEn: { type: Date, default: Date.now }
+});
+const PrecioProducto = mongoose.model('PrecioProducto', PrecioProductoSchema);
 const clientesSSEPedidos = new Set();
+
+function obtenerCatalogoPreciosBase() {
+    try {
+        const indexPath = path.join(__dirname, 'index.html');
+        const contenido = fs.readFileSync(indexPath, 'utf8');
+        const regex = /data-producto="([^"]+)"\s+data-precio="(\d+)"/g;
+        const vistos = new Set();
+        const productos = [];
+
+        let match;
+        while ((match = regex.exec(contenido)) !== null) {
+            const producto = String(match[1] || '').trim();
+            const precio = Number(match[2]);
+
+            if (!producto || Number.isNaN(precio) || vistos.has(producto)) continue;
+
+            vistos.add(producto);
+            productos.push({ producto, precio });
+        }
+
+        return productos;
+    } catch {
+        return [];
+    }
+}
+
+async function obtenerCatalogoPreciosFinal() {
+    const base = obtenerCatalogoPreciosBase();
+    const baseMap = new Map(base.map((item) => [item.producto, item.precio]));
+    const baseSet = new Set(base.map((item) => item.producto));
+
+    const overrides = await PrecioProducto.find({}).lean();
+
+    overrides.forEach((item) => {
+        if (!item?.producto || typeof item?.precio !== 'number') return;
+        baseMap.set(item.producto, item.precio);
+    });
+
+    const catalogo = base.map((item) => ({
+        producto: item.producto,
+        precio: baseMap.get(item.producto)
+    }));
+
+    overrides.forEach((item) => {
+        if (!item?.producto || typeof item?.precio !== 'number') return;
+        if (!baseSet.has(item.producto)) {
+            catalogo.push({ producto: item.producto, precio: item.precio });
+        }
+    });
+
+    return catalogo;
+}
 
 async function obtenerEstadoLocal() {
     let estado = await EstadoLocal.findOne({ key: 'main' });
@@ -284,6 +344,60 @@ app.put('/api/admin/estado-local', authAdmin, async (req, res) => {
         res.status(200).json({ success: true, abierto: estado.abierto, actualizadoEn: estado.actualizadoEn });
     } catch (error) {
         res.status(500).json({ success: false, message: 'No se pudo actualizar el estado del local' });
+    }
+});
+
+app.get('/api/precios', async (req, res) => {
+    try {
+        const precios = await obtenerCatalogoPreciosFinal();
+        res.status(200).json({ success: true, precios });
+    } catch {
+        res.status(500).json({ success: false, message: 'No se pudieron obtener los precios' });
+    }
+});
+
+app.get('/api/admin/precios', authAdmin, async (req, res) => {
+    try {
+        const precios = await obtenerCatalogoPreciosFinal();
+        res.status(200).json({ success: true, precios });
+    } catch {
+        res.status(500).json({ success: false, message: 'No se pudieron obtener los precios' });
+    }
+});
+
+app.put('/api/admin/precios/:producto', authAdmin, async (req, res) => {
+    try {
+        const producto = decodeURIComponent(String(req.params.producto || '')).trim();
+        const precio = Number(req.body?.precio);
+
+        if (!producto) {
+            return res.status(400).json({ success: false, message: 'Producto inválido' });
+        }
+
+        if (!Number.isFinite(precio) || precio <= 0) {
+            return res.status(400).json({ success: false, message: 'El precio debe ser un número mayor a 0' });
+        }
+
+        const catalogoBase = obtenerCatalogoPreciosBase();
+        const existeEnBase = catalogoBase.some((item) => item.producto === producto);
+        if (!existeEnBase) {
+            return res.status(404).json({ success: false, message: 'Producto no encontrado en el catálogo' });
+        }
+
+        await PrecioProducto.findOneAndUpdate(
+            { producto },
+            { $set: { producto, precio: Math.round(precio), actualizadoEn: new Date() } },
+            { upsert: true, new: true }
+        );
+
+        return res.status(200).json({
+            success: true,
+            message: `Precio actualizado para ${producto}`,
+            producto,
+            precio: Math.round(precio)
+        });
+    } catch {
+        return res.status(500).json({ success: false, message: 'No se pudo actualizar el precio del producto' });
     }
 });
 

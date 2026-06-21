@@ -27,6 +27,45 @@ document.addEventListener('DOMContentLoaded', () => {
     const bannerEstado = document.getElementById('local-estado-banner');
     const botonesAgregar = Array.from(document.querySelectorAll('.btn-agregar'));
 
+    function formatPriceARS(value) {
+        return `$${Number(value || 0).toLocaleString('es-AR')}`;
+    }
+
+    function aplicarPreciosEnMenu(precios = []) {
+        const preciosMap = new Map(
+            (Array.isArray(precios) ? precios : [])
+                .map((item) => [String(item?.producto || ''), Number(item?.precio)])
+        );
+
+        botonesAgregar.forEach((boton) => {
+            const producto = String(boton.getAttribute('data-producto') || '');
+            if (!preciosMap.has(producto)) return;
+
+            const nuevoPrecio = Number(preciosMap.get(producto));
+            if (!Number.isFinite(nuevoPrecio) || nuevoPrecio <= 0) return;
+
+            boton.setAttribute('data-precio', String(Math.round(nuevoPrecio)));
+
+            const contenedor = boton.closest('.menu-card') || boton.closest('.card-body');
+            const precioElemento = contenedor ? contenedor.querySelector('.price') : null;
+            if (precioElemento) {
+                precioElemento.innerText = formatPriceARS(Math.round(nuevoPrecio));
+            }
+        });
+    }
+
+    async function cargarPreciosActualizados() {
+        try {
+            const res = await fetch(`${API_BASE}/api/precios`);
+            const data = await res.json();
+            if (data?.success) {
+                aplicarPreciosEnMenu(data.precios || []);
+            }
+        } catch (error) {
+            console.error('No se pudo cargar el catalogo de precios:', error);
+        }
+    }
+
     const imagenesPorProducto = {
         'Combo Zulia': 'files/comboZulia.jpg',
         'Combo Maracay': 'files/comboMaracay.png',
@@ -178,6 +217,7 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     consultarEstadoLocal();
+    cargarPreciosActualizados();
     inicializarBotonesVerImagen();
 
     // 1. MANEJADOR DE CLICS (Agregar productos y soporte para botones visuales de entrega/pago)

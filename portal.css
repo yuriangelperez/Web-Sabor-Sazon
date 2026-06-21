@@ -64,7 +64,8 @@ label {
 
 input[type='text'],
 input[type='password'],
-input[type='date'] {
+input[type='date'],
+input[type='number'] {
     width: 100%;
     background: #0f0f14;
     color: var(--text);
@@ -279,6 +280,44 @@ input[type='date'] {
     font-weight: 700;
 }
 
+.prices-list {
+    display: grid;
+    gap: 10px;
+    margin-top: 10px;
+}
+
+.price-row {
+    display: grid;
+    gap: 8px;
+    padding: 10px;
+    border-radius: 8px;
+    background: #12121a;
+    border: 1px solid rgba(255, 255, 255, 0.06);
+}
+
+.price-name {
+    font-size: 14px;
+    color: var(--text);
+    font-weight: 600;
+}
+
+.price-controls {
+    display: grid;
+    grid-template-columns: minmax(120px, 180px) minmax(80px, auto) auto;
+    gap: 8px;
+    align-items: center;
+}
+
+.price-input {
+    padding: 8px 10px;
+}
+
+.price-preview {
+    color: var(--accent);
+    font-weight: 700;
+    font-size: 13px;
+}
+
 @media (max-width: 700px) {
     .panel-header {
         flex-direction: column;
@@ -286,6 +325,10 @@ input[type='date'] {
     }
 
     .orders-filters {
+        grid-template-columns: 1fr;
+    }
+
+    .price-controls {
         grid-template-columns: 1fr;
     }
 }

@@ -29,6 +29,7 @@ const clearFilterBtn = document.getElementById('clear-filter-btn');
 const exportXlsxBtn = document.getElementById('export-xlsx-btn');
 const deleteFilteredBtn = document.getElementById('delete-filtered-btn');
 const deleteAllBtn = document.getElementById('delete-all-btn');
+const pricesList = document.getElementById('prices-list');
 
 let pedidosActuales = [];
 let autoRefreshTimer = null;
@@ -68,6 +69,10 @@ function formatDate(value) {
         dateStyle: 'short',
         timeStyle: 'short'
     });
+}
+
+function formatPriceARS(value) {
+    return `$${Number(value || 0).toLocaleString('es-AR')}`;
 }
 
 function escapeHtml(value) {
@@ -148,6 +153,39 @@ function renderPedidos(pedidos) {
                 <div class="order-items">${items || 'Sin items'}</div>
                 <div class="order-total">Total: $${Number(pedido.total || 0).toLocaleString('es-AR')}</div>
             </article>
+        `;
+    }).join('');
+}
+
+function renderPrecios(precios) {
+    if (!pricesList) return;
+
+    if (!Array.isArray(precios) || precios.length === 0) {
+        pricesList.innerHTML = '<p class="helper-text">No hay productos para editar.</p>';
+        return;
+    }
+
+    pricesList.innerHTML = precios.map((item) => {
+        const producto = String(item?.producto || 'Producto');
+        const precio = Number(item?.precio || 0);
+        const encodedProducto = encodeURIComponent(producto);
+
+        return `
+            <div class="price-row">
+                <div class="price-name">${escapeHtml(producto)}</div>
+                <div class="price-controls">
+                    <input
+                        type="number"
+                        min="1"
+                        step="1"
+                        class="price-input"
+                        data-producto="${encodedProducto}"
+                        value="${Math.max(1, Math.round(precio))}"
+                    >
+                    <span class="price-preview">${formatPriceARS(precio)}</span>
+                    <button type="button" class="btn btn-small btn-primary btn-save-price" data-producto="${encodedProducto}">Guardar</button>
+                </div>
+            </div>
         `;
     }).join('');
 }
@@ -313,8 +351,13 @@ async function cargarPedidos() {
     }
 }
 
+async function cargarPrecios() {
+    const data = await fetchAdmin('/api/admin/precios');
+    renderPrecios(data.precios || []);
+}
+
 async function inicializarPanel() {
-    await Promise.all([cargarEstado(), cargarPedidos()]);
+    await Promise.all([cargarEstado(), cargarPedidos(), cargarPrecios()]);
 }
 
 function iniciarAutoRefrescoPedidos() {
@@ -617,6 +660,51 @@ if (ordersList) {
                 statusFeedback.textContent = `No se pudo actualizar estado: ${error.message}`;
             }
         }
+    });
+}
+
+if (pricesList) {
+    pricesList.addEventListener('click', async (event) => {
+        const target = event.target;
+        if (!(target instanceof HTMLElement)) return;
+        if (!target.classList.contains('btn-save-price')) return;
+
+        const encodedProducto = String(target.dataset.producto || '');
+        if (!encodedProducto) return;
+
+        const input = pricesList.querySelector(`.price-input[data-producto="${encodedProducto}"]`);
+        if (!(input instanceof HTMLInputElement)) return;
+
+        const nuevoPrecio = Number(input.value);
+        if (!Number.isFinite(nuevoPrecio) || nuevoPrecio <= 0) {
+            statusFeedback.textContent = 'Ingresa un precio valido mayor a 0.';
+            return;
+        }
+
+        statusFeedback.textContent = 'Actualizando precio...';
+        try {
+            await fetchAdmin(`/api/admin/precios/${encodedProducto}`, {
+                method: 'PUT',
+                body: JSON.stringify({ precio: Math.round(nuevoPrecio) })
+            });
+            await cargarPrecios();
+            statusFeedback.textContent = 'Precio actualizado correctamente.';
+        } catch (error) {
+            statusFeedback.textContent = `No se pudo actualizar el precio: ${error.message}`;
+        }
+    });
+
+    pricesList.addEventListener('input', (event) => {
+        const target = event.target;
+        if (!(target instanceof HTMLInputElement)) return;
+        if (!target.classList.contains('price-input')) return;
+
+        const row = target.closest('.price-row');
+        const preview = row ? row.querySelector('.price-preview') : null;
+        if (!preview) return;
+
+        const value = Number(target.value);
+        preview.textContent = Number.isFinite(value) && value > 0 ? formatPriceARS(Math.round(value)) : '$-';
     });
 }
 
