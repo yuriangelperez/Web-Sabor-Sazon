@@ -611,13 +611,30 @@ document.addEventListener('DOMContentLoaded', () => {
                     contenedor.style.color = '#a1a1aa';
                     contenedor.style.marginTop = '4px';
                     contenedor.style.paddingLeft = '15px';
-                    const gustosHtml = item.gustos
-                        .map(g => `<span style="color: #e4e4e7;">${g.componente}:</span> ${g.sabor}`)
-                        .join('<br>');
-                    const adicionalHtml = adicionalUnidad > 0
-                        ? `<br><span style="color: #fbbf24;">Adicional combo: +${formatPriceARS(adicionalUnidad)} c/u (total +${formatPriceARS(adicionalTotal)})</span>`
-                        : '';
-                    contenedor.innerHTML = `${gustosHtml}${adicionalHtml}`;
+                    const gustosHtml = item.gustos.map((g) => {
+                        const componente = String(g?.componente || '');
+                        const sabor = String(g?.sabor || '');
+                        const componenteNorm = normalizarTexto(componente);
+                        const saborNorm = normalizarTexto(sabor);
+
+                        let recargoUnitario = 0;
+                        if (componenteNorm.includes('arepa')) {
+                            if (saborNorm === 'catira' || saborNorm === 'pelua') recargoUnitario = 400;
+                            if (saborNorm === 'pabellon') recargoUnitario = 800;
+                        }
+                        if (componenteNorm.includes('empanada')) {
+                            if (saborNorm === 'catira' || saborNorm === 'pelua') recargoUnitario = 200;
+                            if (saborNorm === 'pabellon') recargoUnitario = 400;
+                        }
+
+                        const recargoTexto = recargoUnitario > 0
+                            ? ` <span style="color: #fbbf24;">(+${formatPriceARS(recargoUnitario)}) x${item.cantidad} +${formatPriceARS(recargoUnitario * item.cantidad)}</span>`
+                            : '';
+
+                        return `<span style="color: #e4e4e7;">${componente}:</span> ${sabor}${recargoTexto}`;
+                    }).join('<br>');
+
+                    contenedor.innerHTML = gustosHtml;
                     return contenedor;
                 };
                 itemDivCheckout.appendChild(generarHTMLGustos());
