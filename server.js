@@ -26,7 +26,7 @@ app.use(express.json());
 const ADMIN_USER = process.env.ADMIN_USER || 'admin';
 const ADMIN_PASS = process.env.ADMIN_PASS || 'sabor123';
 const ADMIN_TOKEN_TTL_MS = 1000 * 60 * 60 * 12;
-const adminTokens = new Map();
+const ADMIN_TOKEN_SECRET = process.env.ADMIN_TOKEN_SECRET || 'sabor-sazon-admin-secret';
 
 // Conexión a MongoDB Atlas
 mongoose.connect('mongodb+srv://yuriangelperezedu_db_user:vVs9x7ZbJ2znTaaQ@cluster0.qfrevux.mongodb.net/saborysazon?appName=Cluster0')
@@ -76,13 +76,53 @@ function authAdmin(req, res, next) {
         return res.status(401).json({ success: false, message: 'No autorizado' });
     }
 
-    const expiration = adminTokens.get(token);
-    if (!expiration || Date.now() > expiration) {
-        if (expiration) adminTokens.delete(token);
+    const payload = verificarTokenAdmin(token);
+    if (!payload) {
         return res.status(401).json({ success: false, message: 'Sesión vencida o inválida' });
     }
 
+    req.admin = { username: payload.u };
     next();
+}
+
+function toBase64Url(input) {
+    return Buffer.from(input).toString('base64url');
+}
+
+function fromBase64Url(input) {
+    return Buffer.from(input, 'base64url').toString('utf8');
+}
+
+function firmarTokenAdmin(payload) {
+    const payloadEncoded = toBase64Url(JSON.stringify(payload));
+    const signature = crypto
+        .createHmac('sha256', ADMIN_TOKEN_SECRET)
+        .update(payloadEncoded)
+        .digest('base64url');
+    return `${payloadEncoded}.${signature}`;
+}
+
+function verificarTokenAdmin(token) {
+    try {
+        const [payloadEncoded, signature] = String(token).split('.');
+        if (!payloadEncoded || !signature) return null;
+
+        const expectedSig = crypto
+            .createHmac('sha256', ADMIN_TOKEN_SECRET)
+            .update(payloadEncoded)
+            .digest('base64url');
+
+        const a = Buffer.from(signature);
+        const b = Buffer.from(expectedSig);
+        if (a.length !== b.length || !crypto.timingSafeEqual(a, b)) return null;
+
+        const payload = JSON.parse(fromBase64Url(payloadEncoded));
+        if (!payload || !payload.u || !payload.exp || Date.now() > payload.exp) return null;
+
+        return payload;
+    } catch {
+        return null;
+    }
 }
 
 function normalizarUsuario(username = '') {
@@ -125,8 +165,10 @@ app.post('/api/admin/login', async (req, res) => {
             return res.status(401).json({ success: false, message: 'Credenciales inválidas' });
         }
 
-        const token = crypto.randomBytes(32).toString('hex');
-        adminTokens.set(token, Date.now() + ADMIN_TOKEN_TTL_MS);
+        const token = firmarTokenAdmin({
+            u: usernameNorm || username,
+            exp: Date.now() + ADMIN_TOKEN_TTL_MS
+        });
 
         return res.status(200).json({ success: true, token });
     } catch (error) {
