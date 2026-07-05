@@ -284,6 +284,10 @@ document.addEventListener('DOMContentLoaded', () => {
             const data = await res.json();
             if (data.success) {
                 const abierto = Boolean(data.abierto);
+                const horarioAtencionTexto = document.getElementById('horario-atencion-texto');
+                if (horarioAtencionTexto && data.horarioApertura && data.horarioCierre) {
+                    horarioAtencionTexto.textContent = `${data.horarioApertura} a ${data.horarioCierre}`;
+                }
                 aplicarEstadoLocalEnUI(abierto);
                 if (!abierto && bannerEstado) {
                     bannerEstado.textContent = data.fueraDeHorario
@@ -658,20 +662,20 @@ document.addEventListener('DOMContentLoaded', () => {
         }
 
         const metodoPagoActivo = document.querySelector('input[name="metodo_pago"]:checked')?.value;
-        let descuento = (metodoPagoActivo === 'efectivo' || metodoPagoActivo === 'transferencia') ? totalProductos * 0.05 : 0;
+        const recargo = metodoPagoActivo === 'mercadopago' ? Math.round(totalProductos * 0.05) : 0;
 
-        if (descuento > 0) {
-            const divDesc = document.createElement('div');
-            divDesc.style.display = 'flex';
-            divDesc.style.justifyContent = 'space-between';
-            divDesc.style.color = '#fabb3a';
-            divDesc.style.fontSize = '13px';
-            divDesc.innerHTML = `<span>🔥 Descuento 5% OFF</span><span>-$${descuento.toLocaleString('es-AR')}</span>`;
-            if (carritoItemsDiv) carritoItemsDiv.appendChild(divDesc.cloneNode(true));
-            if (sidebarItemsDiv) sidebarItemsDiv.appendChild(divDesc);
+        if (recargo > 0) {
+            const divRecargo = document.createElement('div');
+            divRecargo.style.display = 'flex';
+            divRecargo.style.justifyContent = 'space-between';
+            divRecargo.style.color = '#fabb3a';
+            divRecargo.style.fontSize = '13px';
+            divRecargo.innerHTML = `<span>💳 Recargo Mercado Pago 5%</span><span>+$${recargo.toLocaleString('es-AR')}</span>`;
+            if (carritoItemsDiv) carritoItemsDiv.appendChild(divRecargo.cloneNode(true));
+            if (sidebarItemsDiv) sidebarItemsDiv.appendChild(divRecargo);
         }
 
-        const totalGeneral = (totalProductos - descuento) + costoEnvio;
+        const totalGeneral = totalProductos + recargo + costoEnvio;
         if (carritoTotalSpan) carritoTotalSpan.innerText = `$${totalGeneral.toLocaleString('es-AR')}`;
         if (sidebarTotalSpan) sidebarTotalSpan.innerText = `$${totalGeneral.toLocaleString('es-AR')}`;
 
@@ -689,8 +693,8 @@ document.addEventListener('DOMContentLoaded', () => {
 
     function obtenerTotalesActuales() {
         const metodoPagoActivo = document.querySelector('input[name="metodo_pago"]:checked')?.value;
-        const descuento = (metodoPagoActivo === 'efectivo' || metodoPagoActivo === 'transferencia') ? totalProductos * 0.05 : 0;
-        return { descuento, totalGeneral: (totalProductos - descuento) + costoEnvio };
+        const recargo = metodoPagoActivo === 'mercadopago' ? Math.round(totalProductos * 0.05) : 0;
+        return { descuento: 0, recargo, totalGeneral: totalProductos + recargo + costoEnvio };
     }
 
     // 4. ENVÍO DE FORMULARIO CORRECTO
@@ -727,7 +731,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 direccion = `${calleInput.value.trim()}, ${nombreZona}`;
             }
 
-            const { totalGeneral, descuento } = obtenerTotalesActuales();
+            const { totalGeneral, descuento, recargo } = obtenerTotalesActuales();
 
             const datosPedido = {
                 cliente: { nombre, telefono: telefonoInput, direccion },
@@ -735,6 +739,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 tipoEntrega,
                 costoEnvio,
                 descuento,
+                recargo,
                 total: totalGeneral,
                 metodoPago
             };
@@ -777,7 +782,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     });
 
                     if (costoEnvio > 0) mensajeWA += `• *Costo de Envío:* $${costoEnvio.toLocaleString('es-AR')}\n`;
-                    if (descuento > 0) mensajeWA += `• *Descuento (5% Off):* -$${descuento.toLocaleString('es-AR')}\n`;
+                    if (recargo > 0) mensajeWA += `• *Recargo Mercado Pago (5%):* +$${recargo.toLocaleString('es-AR')}\n`;
 
                     if (metodoPago === 'efectivo') {
                         mensajeWA += `\n*Total a Pagar:* $${totalGeneral.toLocaleString('es-AR')}\n\n¡Abono en efectivo al retirar!`;

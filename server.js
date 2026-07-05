@@ -58,6 +58,8 @@ const PedidoSchema = new mongoose.Schema({
     tipoEntrega: { type: String, default: 'retiro' },
     metodoPago: { type: String, default: 'mercadopago' },
     costoEnvio: { type: Number, default: 0 },
+    descuento: { type: Number, default: 0 },
+    recargo: { type: Number, default: 0 },
     total: Number,
     estado: { type: String, default: 'Pendiente' },
     payment_status: { type: String, default: 'pending' }, // Control de pago
@@ -76,6 +78,8 @@ const AdminUser = mongoose.model('AdminUser', AdminUserSchema);
 const EstadoLocalSchema = new mongoose.Schema({
     key: { type: String, unique: true },
     abierto: { type: Boolean, default: true },
+    horarioApertura: { type: String, default: '10:00' },
+    horarioCierre: { type: String, default: '22:00' },
     actualizadoEn: { type: Date, default: Date.now }
 });
 const EstadoLocal = mongoose.model('EstadoLocal', EstadoLocalSchema);
@@ -258,16 +262,36 @@ async function obtenerCatalogoDisponibilidad() {
 async function obtenerEstadoLocal() {
     let estado = await EstadoLocal.findOne({ key: 'main' });
     if (!estado) {
-        estado = await EstadoLocal.create({ key: 'main', abierto: true });
+        estado = await EstadoLocal.create({ key: 'main', abierto: true, horarioApertura: '10:00', horarioCierre: '22:00' });
     }
     return estado;
 }
 
-// Retorna true si el horario actual (Argentina UTC-3) está entre 10:00 y 22:00
-function estaEnHorario() {
+function esHoraValida(value) {
+    return /^([01]\d|2[0-3]):[0-5]\d$/.test(String(value || ''));
+}
+
+function horaAMinutos(value) {
+    const [horas, minutos] = String(value || '00:00').split(':').map(Number);
+    return (horas * 60) + minutos;
+}
+
+// Retorna true si la hora actual de Argentina esta dentro del horario configurado.
+function estaEnHorario(estado = {}) {
     const ahora = new Date();
     const horasArg = ((ahora.getUTCHours() - 3) + 24) % 24;
-    return horasArg >= 10 && horasArg < 22;
+    const minutosActuales = (horasArg * 60) + ahora.getUTCMinutes();
+    const apertura = esHoraValida(estado.horarioApertura) ? estado.horarioApertura : '10:00';
+    const cierre = esHoraValida(estado.horarioCierre) ? estado.horarioCierre : '22:00';
+    const minutosApertura = horaAMinutos(apertura);
+    const minutosCierre = horaAMinutos(cierre);
+
+    if (minutosApertura === minutosCierre) return true;
+    if (minutosApertura < minutosCierre) {
+        return minutosActuales >= minutosApertura && minutosActuales < minutosCierre;
+    }
+
+    return minutosActuales >= minutosApertura || minutosActuales < minutosCierre;
 }
 
 function authAdmin(req, res, next) {
@@ -469,14 +493,18 @@ app.post('/api/admin/usuarios', authAdmin, async (req, res) => {
 app.get('/api/estado-local', async (req, res) => {
     try {
         const estado = await obtenerEstadoLocal();
-        const dentroHorario = estaEnHorario();
-        // Si está fuera del horario automático (10-22 Arg), el local siempre está cerrado
+        const dentroHorario = estaEnHorario(estado);
+        const horarioApertura = esHoraValida(estado.horarioApertura) ? estado.horarioApertura : '10:00';
+        const horarioCierre = esHoraValida(estado.horarioCierre) ? estado.horarioCierre : '22:00';
         const abiertoFinal = dentroHorario ? estado.abierto : false;
         res.status(200).json({
             success: true,
             abierto: abiertoFinal,
+            abiertoManual: estado.abierto,
             fueraDeHorario: !dentroHorario,
-            horario: '10:00 - 22:00',
+            horarioApertura,
+            horarioCierre,
+            horario: `${horarioApertura} - ${horarioCierre}`,
             actualizadoEn: estado.actualizadoEn
         });
     } catch (error) {
@@ -486,18 +514,31 @@ app.get('/api/estado-local', async (req, res) => {
 
 app.put('/api/admin/estado-local', authAdmin, async (req, res) => {
     try {
-        const { abierto } = req.body || {};
+        const { abierto, horarioApertura, horarioCierre } = req.body || {};
         if (typeof abierto !== 'boolean') {
             return res.status(400).json({ success: false, message: 'El campo abierto debe ser booleano' });
+        }
+        const estadoActual = await obtenerEstadoLocal();
+        const nuevaApertura = horarioApertura ?? estadoActual.horarioApertura ?? '10:00';
+        const nuevoCierre = horarioCierre ?? estadoActual.horarioCierre ?? '22:00';
+
+        if (!esHoraValida(nuevaApertura) || !esHoraValida(nuevoCierre)) {
+            return res.status(400).json({ success: false, message: 'El horario debe tener formato HH:MM' });
         }
 
         const estado = await EstadoLocal.findOneAndUpdate(
             { key: 'main' },
-            { $set: { abierto, actualizadoEn: new Date() } },
+            { $set: { abierto, horarioApertura: nuevaApertura, horarioCierre: nuevoCierre, actualizadoEn: new Date() } },
             { new: true, upsert: true }
         );
 
-        res.status(200).json({ success: true, abierto: estado.abierto, actualizadoEn: estado.actualizadoEn });
+        res.status(200).json({
+            success: true,
+            abierto: estado.abierto,
+            horarioApertura: estado.horarioApertura,
+            horarioCierre: estado.horarioCierre,
+            actualizadoEn: estado.actualizadoEn
+        });
     } catch (error) {
         res.status(500).json({ success: false, message: 'No se pudo actualizar el estado del local' });
     }
@@ -888,7 +929,7 @@ app.post('/api/pedidos', async (req, res) => {
         }
 
         const estadoLocal = await obtenerEstadoLocal();
-        const dentroHorario = estaEnHorario();
+        const dentroHorario = estaEnHorario(estadoLocal);
         if (!dentroHorario || !estadoLocal.abierto) {
             return res.status(403).json({
                 success: false,
@@ -916,6 +957,15 @@ app.post('/api/pedidos', async (req, res) => {
                 title: 'Costo de Envio',
                 quantity: 1,
                 unit_price: Number(req.body.costoEnvio),
+                currency_id: 'ARS'
+            });
+        }
+
+        if (req.body.metodoPago === 'mercadopago' && Number(req.body.recargo) > 0) {
+            itemsMP.push({
+                title: 'Recargo Mercado Pago 5%',
+                quantity: 1,
+                unit_price: Number(req.body.recargo),
                 currency_id: 'ARS'
             });
         }

@@ -8,6 +8,8 @@ const loginError = document.getElementById('login-error');
 
 const estadoInput = document.getElementById('estado-local');
 const estadoLabel = document.getElementById('estado-label');
+const horarioAperturaInput = document.getElementById('horario-apertura');
+const horarioCierreInput = document.getElementById('horario-cierre');
 const saveStatusBtn = document.getElementById('save-status-btn');
 const statusFeedback = document.getElementById('status-feedback');
 const createUserForm = document.getElementById('create-user-form');
@@ -563,7 +565,9 @@ async function fetchAdmin(path, options = {}) {
 
 async function cargarEstado() {
     const data = await fetchAdmin('/api/estado-local');
-    estadoInput.checked = Boolean(data.abierto);
+    estadoInput.checked = Boolean(data.abiertoManual ?? data.abierto);
+    if (horarioAperturaInput) horarioAperturaInput.value = data.horarioApertura || '10:00';
+    if (horarioCierreInput) horarioCierreInput.value = data.horarioCierre || '22:00';
     updateEstadoLabel();
 }
 
@@ -688,9 +692,13 @@ saveStatusBtn.addEventListener('click', async () => {
     try {
         await fetchAdmin('/api/admin/estado-local', {
             method: 'PUT',
-            body: JSON.stringify({ abierto: estadoInput.checked })
+            body: JSON.stringify({
+                abierto: estadoInput.checked,
+                horarioApertura: horarioAperturaInput?.value || '10:00',
+                horarioCierre: horarioCierreInput?.value || '22:00'
+            })
         });
-        statusFeedback.textContent = `Estado actualizado: ${estadoInput.checked ? 'abierto' : 'cerrado'}.`;
+        statusFeedback.textContent = `Estado actualizado: ${estadoInput.checked ? 'abierto' : 'cerrado'} de ${horarioAperturaInput.value} a ${horarioCierreInput.value}.`;
     } catch (error) {
         statusFeedback.textContent = `No se pudo guardar el estado: ${error.message}`;
     }

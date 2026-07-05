@@ -65,6 +65,7 @@ label {
 input[type='text'],
 input[type='password'],
 input[type='date'],
+input[type='time'],
 input[type='number'] {
     width: 100%;
     background: #0f0f14;
@@ -127,6 +128,13 @@ input[type='number'] {
     display: flex;
     align-items: center;
     gap: 12px;
+    margin-bottom: 14px;
+}
+
+.schedule-row {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(140px, 1fr));
+    gap: 10px;
     margin-bottom: 14px;
 }
 

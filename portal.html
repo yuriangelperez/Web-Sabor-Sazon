@@ -48,6 +48,16 @@
                     </label>
                     <strong id="estado-label">Abierto</strong>
                 </div>
+                <div class="schedule-row">
+                    <div class="filter-group">
+                        <label for="horario-apertura">Apertura</label>
+                        <input type="time" id="horario-apertura" value="10:00" required>
+                    </div>
+                    <div class="filter-group">
+                        <label for="horario-cierre">Cierre</label>
+                        <input type="time" id="horario-cierre" value="22:00" required>
+                    </div>
+                </div>
                 <button id="save-status-btn" class="btn btn-primary">Guardar estado</button>
                 <p id="status-feedback" class="helper-text" aria-live="polite"></p>
             </article>
