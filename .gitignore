@@ -21,7 +21,7 @@ node_modules/
 .env.production
 .env.production.local
 .env.*.local
-
+.env.example
 # Cualquier archivo de variables de entorno
 *.env
 
