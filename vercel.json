@@ -4,5 +4,10 @@
   "routes": [
     { "handle": "filesystem" },
     { "src": "/(.*)", "dest": "/index.html" }
+  ],
+  "redirects": [
+    { "source": "/https://web-sabor-sazon.vercel.app", 
+    "destination": "/https://saborysazon.xyz",
+    "permanent": true }
   ]
 }
